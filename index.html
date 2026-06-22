@@ -6,7 +6,7 @@
 <title>JS Dance · 期課報名</title>
 <meta property="og:title" content="JS Dance · 期課報名">
 <meta property="og:description" content="兒童MV專攻班、兒童MV夏令營、成人芭蕾期課班，立即線上報名。">
-<meta property="og:url" content="https://sincealan4305-sudo.github.io/reservation/">
+<meta property="og:url" content="https://jsdancegallery.github.io/reservation/">
 <meta name="description" content="JS Dance 期課報名｜兒童MV專攻班、兒童MV夏令營、成人芭蕾期課班">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -736,7 +736,7 @@
 
 <script>
   // ── Google Apps Script URL（課程報名 + 點數方案 共用同一個）──
-  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzoC22ar-SvmIEHN0xwurS_kJ8eyVK-foH7NPYnc-8SS1n1hKaIeAoPSj5Eg5zUrMBw/exec';
+  const SHEET_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
   const PLAN_SHEET_URL = SHEET_URL;
 
   // ── TAB SWITCHING ──
@@ -890,6 +890,22 @@
   // init: hide email (default is 舊用戶)
   document.addEventListener('DOMContentLoaded', () => {
     showNewUserNotice(false);
+    // 初始化所有表單：預設匯款 → 末五碼欄位顯示
+    ['mv', 'summer', 'ballet'].forEach(id => {
+      const field = document.getElementById('remit-' + id);
+      if (field) {
+        field.classList.remove('hidden');
+        const input = field.querySelector('input');
+        if (input) input.setAttribute('required', '');
+      }
+    });
+    // 點數方案預設匯款儲值 → 末五碼顯示
+    const planField = document.getElementById('remit-plan');
+    if (planField) {
+      planField.classList.remove('hidden');
+      const input = planField.querySelector('input');
+      if (input) input.setAttribute('required', '');
+    }
   });
 
   // plan remit toggle (現金預設隱藏末五碼)
