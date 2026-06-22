@@ -311,7 +311,8 @@
   async function gasCall(payload) {
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // 不設 Content-Type（避免觸發 CORS preflight）
+      // GAS 端用 JSON.parse(e.postData.contents) 接收即可
       body: JSON.stringify(payload)
     });
     return res.json();
