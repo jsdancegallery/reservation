@@ -990,7 +990,12 @@
         document.getElementById('qty-'+id).value = 1;
       });
       updateTotal();
-      document.getElementById('remit-plan').classList.add('hidden');
+      // 重設末五碼欄位：依預設繳費方式決定顯示（預設匯款儲值 → 顯示）
+      const defaultPay = form.querySelector('input[name="pay_plan"]');
+      if (defaultPay) {
+        const firstChecked = form.querySelector('input[name="pay_plan"]:checked');
+        toggleRemit('plan', firstChecked ? firstChecked.value : '匯款儲值');
+      }
       document.getElementById('new-user-notice').style.display = 'none';
       // thank page
       const msg = payMethod.includes('現金')
