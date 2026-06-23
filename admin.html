@@ -165,6 +165,42 @@
     .content{padding:16px}
     .topbar{padding:0 16px}
   }
+
+  /* ACTION BUTTON */
+  .btn-action{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+    border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;
+    background:var(--bg);color:var(--text-secondary);border:1.5px solid var(--border);
+    transition:all .15s;white-space:nowrap}
+  .btn-action:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-overlay.show{opacity:1;pointer-events:auto}
+  .modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:520px;
+    box-shadow:var(--shadow-md);transform:translateY(16px);transition:transform .2s;overflow:hidden}
+  .modal-overlay.show .modal{transform:translateY(0)}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;
+    padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+  .modal-title{font-size:16px;font-weight:700}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;
+    color:var(--text-tertiary);line-height:1;padding:4px}
+  .modal-close:hover{color:var(--text-primary)}
+  .modal-body{padding:20px 24px}
+  .order-field{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .order-field:last-child{border-bottom:none}
+  .order-field-label{width:80px;flex-shrink:0;color:var(--text-tertiary);font-weight:500}
+  .order-field-value{color:var(--text-primary);word-break:break-all}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);
+    display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+  .btn-next{padding:9px 20px;border-radius:100px;font-family:var(--font);font-size:13px;
+    font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+  .btn-next:hover{opacity:.85}
+  .btn-next:disabled{opacity:.4;pointer-events:none}
+  .btn-confirm{background:#34c759;color:#fff}
+  .btn-import{background:var(--accent);color:#fff}
+  .btn-cancel{background:#ff3b30;color:#fff}
 </style>
 </head>
 <body>
@@ -287,6 +323,19 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="order-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">訂單詳情</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
   </div>
 </div>
 
@@ -519,16 +568,13 @@
               <td style="white-space:nowrap;color:var(--text-secondary);font-size:12px">${formatTime(o.timestamp)}</td>
               <td style="font-weight:500;white-space:nowrap">${o.name}</td>
               <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
-              <td style="white-space:nowrap">${o.phone}</td>
+              <td style="white-space:nowrap">${formatPhone(o.phone)}</td>
               <td style="white-space:nowrap;font-size:12px">${o.pay}</td>
               <td style="white-space:nowrap;font-family:monospace">${o.remit || '—'}</td>
               <td>
-                <select class="status-select" onchange="updateStatus(this, '${o.sheetName}', ${o.row})">
-                  <option value="待確認"   ${o.status==='待確認'   ?'selected':''}>🟠 待確認</option>
-                  <option value="已對帳"   ${o.status==='已對帳'   ?'selected':''}>🟢 已對帳</option>
-                  <option value="已匯入點數" ${o.status==='已匯入點數'?'selected':''}>🔵 已匯入點數</option>
-                  <option value="已完成"   ${o.status==='已完成'   ?'selected':''}>⚪ 已完成</option>
-                </select>
+                <button class="btn-action" onclick="openModal(${allOrders.indexOf(o)})">
+                  ${statusDot(o.status)} ${o.status}
+                </button>
               </td>
             </tr>
           `).join('')}
@@ -540,25 +586,102 @@
 
   function formatTime(ts) {
     if (!ts) return '—';
-    return String(ts).replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1/$2/$3').substring(0, 16);
+    const s = String(ts);
+    // ISO format: 2026-06-23T08:40 → 2026/06/23 08:40
+    const iso = s.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (iso) return `${iso[1]}/${iso[2]}/${iso[3]} ${iso[4]}:${iso[5]}`;
+    // slash format: 2026/6/23 8:40
+    const sl = s.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(\d{1,2}):(\d{2})/);
+    if (sl) return `${sl[1]}/${sl[2].padStart(2,'0')}/${sl[3].padStart(2,'0')} ${sl[4].padStart(2,'0')}:${sl[5]}`;
+    return s.substring(0, 16);
   }
 
-  // ── UPDATE STATUS ──
-  async function updateStatus(sel, sheetName, row) {
-    const newStatus = sel.value;
-    sel.classList.add('saving');
-    try {
-      await gasCall({ action: 'updateStatus', sheetName, row, status: newStatus });
-      // update local data
-      const order = allOrders.find(o => o.sheetName === sheetName && o.row === row);
-      if (order) order.status = newStatus;
-      updateStats();
-      toast('✅ 狀態已更新：' + newStatus);
-    } catch(e) {
-      toast('❌ 更新失敗，請重試');
-      sel.value = allOrders.find(o => o.sheetName === sheetName && o.row === row)?.status || '待確認';
+  function formatPhone(p) {
+    if (!p) return '—';
+    let s = String(p).replace(/\D/g, '');
+    // Google Sheets 會把 09 開頭的電話當數字去掉前導 0
+    if (s.length === 9) s = '0' + s;
+    return s;
+  }
+
+  function statusDot(status) {
+    const map = { '待確認':'🟠', '已對帳':'🟢', '已匯入點數':'🔵', '已完成':'⚪' };
+    return map[status] || '⚪';
+  }
+
+  // ── MODAL ──
+  let modalOrderIdx = null;
+
+  function openModal(idx) {
+    modalOrderIdx = idx;
+    const o = allOrders[idx];
+    const title = document.getElementById('modal-title');
+    const body  = document.getElementById('modal-body');
+    const footer = document.getElementById('modal-footer');
+
+    title.textContent = (o.type === 'reservation' ? '課程報名' : '點數方案') + ' 訂單詳情';
+
+    const fields = [
+      ['狀態', statusDot(o.status) + ' ' + o.status],
+      ['時間', formatTime(o.timestamp)],
+      ['姓名', o.name || '—'],
+      ['課程/方案', o.course || '—'],
+      ['電話', formatPhone(o.phone)],
+      ['Email', o.email || '—'],
+      ['繳費方式', o.pay || '—'],
+      ['末五碼', o.remit || '—'],
+    ];
+    body.innerHTML = fields.map(([l, v]) =>
+      `<div class="order-field"><div class="order-field-label">${l}</div><div class="order-field-value">${v}</div></div>`
+    ).join('');
+
+    // 依狀態決定操作按鈕
+    let btns = '';
+    if (o.status === '待確認') {
+      btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已對帳')">✅ 已對帳</button>
+              <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消訂單</button>`;
+    } else if (o.status === '已對帳') {
+      btns = `<button class="btn-next btn-import" onclick="doStatusUpdate(${idx},'已匯入點數')">🔵 已匯入點數</button>
+              <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消訂單</button>`;
+    } else if (o.status === '已匯入點數') {
+      btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已完成')" style="background:#8e8e93">⚪ 標記已完成</button>`;
+    } else {
+      btns = `<span style="font-size:13px;color:var(--text-tertiary)">此訂單已完成，無需操作</span>`;
     }
-    sel.classList.remove('saving');
+    footer.innerHTML = btns;
+
+    document.getElementById('order-modal').classList.add('show');
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== document.getElementById('order-modal')) return;
+    document.getElementById('order-modal').classList.remove('show');
+    modalOrderIdx = null;
+  }
+
+  async function doStatusUpdate(idx, newStatus) {
+    const o = allOrders[idx];
+    const footer = document.getElementById('modal-footer');
+    footer.querySelectorAll('button').forEach(b => b.disabled = true);
+    try {
+      await gasCall({ action: 'updateStatus', sheetName: o.sheetName, row: o.row, status: newStatus });
+      o.status = newStatus;
+      updateStats();
+      updateBadges();
+      renderTable();
+      toast('✅ 狀態已更新：' + newStatus);
+      // 若已匯入點數 → 自動跳已完成
+      if (newStatus === '已匯入點數') {
+        setTimeout(() => doStatusUpdate(idx, '已完成'), 300);
+        document.getElementById('order-modal').classList.remove('show');
+        return;
+      }
+      // 更新 modal 內容
+      openModal(idx);
+    } catch(err) {
+      toast('❌ 更新失敗，請重試');
+      footer.querySelectorAll('button').forEach(b => b.disabled = false);
+    }
   }
 </script>
 </body>
