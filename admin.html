@@ -360,20 +360,20 @@
     if (!user || !pass) { err.textContent = '請輸入帳號和密碼。'; err.classList.add('show'); return; }
 
     btn.textContent = '登入中…'; btn.disabled = true;
-    try {
-      const data = await gasCall({ action: 'login', username: user, password: pass });
-      if (data.success) {
-        currentUser = data.name;
-        document.getElementById('sidebar-user').textContent = data.name;
-        document.getElementById('login-page').style.display = 'none';
-        document.getElementById('app').classList.add('show');
-        loadOrders();
-      } else {
-        err.textContent = '帳號或密碼錯誤，請再試一次。';
-        err.classList.add('show');
-      }
-    } catch(e) {
-      err.textContent = '連線失敗，請檢查網路後再試。';
+
+    // 本地驗證
+    const ACCOUNTS = [
+      { user: 'js', pass: 'js2022', name: '管理員' },
+    ];
+    const match = ACCOUNTS.find(a => a.user === user && a.pass === pass);
+    if (match) {
+      currentUser = match.name;
+      document.getElementById('sidebar-user').textContent = match.name;
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('app').classList.add('show');
+      loadOrders();
+    } else {
+      err.textContent = '帳號或密碼錯誤，請再試一次。';
       err.classList.add('show');
     }
     btn.textContent = '登入'; btn.disabled = false;
