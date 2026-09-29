@@ -165,42 +165,6 @@
     .content{padding:16px}
     .topbar{padding:0 16px}
   }
-
-  /* ACTION BUTTON */
-  .btn-action{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
-    border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;
-    background:var(--bg);color:var(--text-secondary);border:1.5px solid var(--border);
-    transition:all .15s;white-space:nowrap}
-  .btn-action:hover{border-color:var(--accent);color:var(--accent)}
-
-  /* MODAL */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;
-    display:flex;align-items:center;justify-content:center;padding:24px;
-    opacity:0;pointer-events:none;transition:opacity .2s}
-  .modal-overlay.show{opacity:1;pointer-events:auto}
-  .modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:520px;
-    box-shadow:var(--shadow-md);transform:translateY(16px);transition:transform .2s;overflow:hidden}
-  .modal-overlay.show .modal{transform:translateY(0)}
-  .modal-header{display:flex;align-items:center;justify-content:space-between;
-    padding:20px 24px 16px;border-bottom:1px solid var(--border)}
-  .modal-title{font-size:16px;font-weight:700}
-  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;
-    color:var(--text-tertiary);line-height:1;padding:4px}
-  .modal-close:hover{color:var(--text-primary)}
-  .modal-body{padding:20px 24px}
-  .order-field{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
-  .order-field:last-child{border-bottom:none}
-  .order-field-label{width:80px;flex-shrink:0;color:var(--text-tertiary);font-weight:500}
-  .order-field-value{color:var(--text-primary);word-break:break-all}
-  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);
-    display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
-  .btn-next{padding:9px 20px;border-radius:100px;font-family:var(--font);font-size:13px;
-    font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
-  .btn-next:hover{opacity:.85}
-  .btn-next:disabled{opacity:.4;pointer-events:none}
-  .btn-confirm{background:#34c759;color:#fff}
-  .btn-import{background:var(--accent);color:#fff}
-  .btn-cancel{background:#ff3b30;color:#fff}
 </style>
 </head>
 <body>
@@ -259,6 +223,9 @@
       <div class="nav-item" data-view="done" onclick="switchView('done')">
         <span class="icon">⚪</span> 已完成
       </div>
+      <div class="nav-item" data-view="scheduled" onclick="switchView('scheduled')">
+        <span class="icon">📅</span> 已排課
+      </div>
     </div>
     <div class="sidebar-footer">
       <button class="btn-logout" onclick="logout()">登出</button>
@@ -297,6 +264,10 @@
           <div class="stat-label">⚪ 已完成</div>
           <div class="stat-value" id="stat-done" style="color:var(--status-done)">—</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">📅 已排課</div>
+          <div class="stat-value" id="stat-scheduled" style="color:#5a6a7a">—</div>
+        </div>
       </div>
 
       <!-- FILTERS -->
@@ -326,19 +297,6 @@
   </div>
 </div>
 
-
-<!-- ORDER MODAL -->
-<div class="modal-overlay" id="order-modal" onclick="closeModal(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-title">訂單詳情</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer" id="modal-footer"></div>
-  </div>
-</div>
-
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -358,13 +316,33 @@
   }
 
   async function gasCall(payload) {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      // 不設 Content-Type（避免觸發 CORS preflight）
-      // GAS 端用 JSON.parse(e.postData.contents) 接收即可
-      body: JSON.stringify(payload)
+    return new Promise((resolve, reject) => {
+      const cbName = 'cb_' + Date.now();
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        callback: cbName,
+        payload: JSON.stringify(payload)
+      });
+      window[cbName] = (data) => {
+        delete window[cbName];
+        document.body.removeChild(script);
+        resolve(data);
+      };
+      script.onerror = () => {
+        delete window[cbName];
+        document.body.removeChild(script);
+        reject(new Error('JSONP failed'));
+      };
+      script.src = GAS_URL + '?' + params.toString();
+      document.body.appendChild(script);
+      setTimeout(() => {
+        if (window[cbName]) {
+          delete window[cbName];
+          try { document.body.removeChild(script); } catch(e) {}
+          reject(new Error('timeout'));
+        }
+      }, 15000);
     });
-    return res.json();
   }
 
   // ── LOGIN ──
@@ -381,14 +359,21 @@
 
     if (!user || !pass) { err.textContent = '請輸入帳號和密碼。'; err.classList.add('show'); return; }
 
-    if (user === 'js' && pass === 'js2022') {
-      currentUser = '管理員';
-      document.getElementById('sidebar-user').textContent = '管理員';
-      document.getElementById('login-page').style.display = 'none';
-      document.getElementById('app').classList.add('show');
-      loadOrders();
-    } else {
-      err.textContent = '帳號或密碼錯誤，請再試一次。';
+    btn.textContent = '登入中…'; btn.disabled = true;
+    try {
+      const data = await gasCall({ action: 'login', username: user, password: pass });
+      if (data.success) {
+        currentUser = data.name;
+        document.getElementById('sidebar-user').textContent = data.name;
+        document.getElementById('login-page').style.display = 'none';
+        document.getElementById('app').classList.add('show');
+        loadOrders();
+      } else {
+        err.textContent = '帳號或密碼錯誤，請再試一次。';
+        err.classList.add('show');
+      }
+    } catch(e) {
+      err.textContent = '連線失敗，請檢查網路後再試。';
       err.classList.add('show');
     }
     btn.textContent = '登入'; btn.disabled = false;
@@ -412,27 +397,33 @@
       allOrders = [];
 
       // reservation rows (skip header row 0)
+      // A=時間 B=課程 C=家長姓名 D=學員姓名 E=電話 F=Email G=繳費 H=末五碼 I=17fit J=Line K=退費 L=狀態 (M=方案 N=費用 O=時段 for pilates)
       const resHeaders = data.reservation[0] || [];
-      const statusColRes = resHeaders.length - 1;
       data.reservation.slice(1).forEach((row, i) => {
-        if (!row[0]) return; // skip empty
+        if (!row[0]) return;
+        const isPilates = (row[1] || '') === '皮拉提斯器械床';
         allOrders.push({
-          type:    'reservation',
+          type:      isPilates ? 'pilates' : 'reservation',
           sheetName: 'reservation',
-          row:     i + 2, // 1-based, skip header
-          timestamp: row[0] || '',
-          course:  row[1] || '',
-          name:    (row[2] || '') + (row[3] ? ' / ' + row[3] : ''),
-          phone:   row[4] || '',
-          email:   row[5] || '',
-          pay:     row[6] || '',
-          remit:   row[7] || '',
-          status:  row[resHeaders.length - 1] || '待確認',
-          raw:     row,
+          row:       i + 2,
+          timestamp: row[0]  || '',
+          course:    row[1]  || '',
+          name:      isPilates ? (row[3] || '') : ((row[2] || '') + (row[3] ? ' / ' + row[3] : '')),
+          phone:     row[4]  || '',
+          email:     row[5]  || '',
+          pay:       row[6]  || '',
+          remit:     row[7]  || '',
+          status:    row[11] !== undefined ? (row[11] || '待確認') : (row[resHeaders.length - 1] || '待確認'),
+          // pilates extra
+          package:   row[12] || '',
+          price:     row[13] || '',
+          sessions:  row[14] || '',
+          raw:       row,
         });
       });
 
       // plan rows
+      // A=時間 B=姓名 C=新舊 D=電話 E=Email F=品項 G=總額 H=總點 I=繳費 J=末五碼 K=同意1 L=同意2 M=狀態
       const planHeaders = data.plan[0] || [];
       data.plan.slice(1).forEach((row, i) => {
         if (!row[0]) return;
@@ -447,10 +438,38 @@
           email:   row[4] || '',
           pay:     row[8] || '',
           remit:   row[9] || '',
-          status:  row[planHeaders.length - 1] || '待確認',
+          status:  row[12] !== undefined ? (row[12] || '待確認') : (row[planHeaders.length - 1] || '待確認'),
           raw:     row,
         });
       });
+
+      // pilates rows
+      // GAS columns: timestamp(0) course(1) student_name(2) phone(3) email(4)
+      //              package(5) price(6) sessions(7) pay_method(8) remit_code(9)
+      //              notice1(10) notice2(11) notice3(12) status(last)
+      if (data.pilates) {
+        const pilHeaders = data.pilates[0] || [];
+        data.pilates.slice(1).forEach((row, i) => {
+          if (!row[0]) return;
+          allOrders.push({
+            type:      'pilates',
+            sheetName: 'pilates',
+            row:       i + 2,
+            timestamp: row[0] || '',
+            course:    row[1] || '',
+            name:      row[2] || '',
+            phone:     row[3] || '',
+            email:     row[4] || '',
+            package:   row[5] || '',
+            price:     row[6] || '',
+            sessions:  row[7] || '',
+            pay:       row[8] || '',
+            remit:     row[9] || '',
+            status:    row[pilHeaders.length - 1] || '待確認',
+            raw:       row,
+          });
+        });
+      }
 
       // sort newest first
       allOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -467,18 +486,20 @@
 
   // ── STATS ──
   function updateStats() {
-    const counts = { pending:0, checked:0, imported:0, done:0 };
+    const counts = { pending:0, checked:0, imported:0, done:0, scheduled:0 };
     allOrders.forEach(o => {
       if (o.status === '待確認') counts.pending++;
       else if (o.status === '已對帳') counts.checked++;
       else if (o.status === '已匯入點數') counts.imported++;
       else if (o.status === '已完成') counts.done++;
+      else if (o.status === '已排課') counts.scheduled++;
     });
     document.getElementById('stat-total').textContent   = allOrders.length;
     document.getElementById('stat-pending').textContent  = counts.pending;
     document.getElementById('stat-checked').textContent  = counts.checked;
     document.getElementById('stat-imported').textContent = counts.imported;
     document.getElementById('stat-done').textContent     = counts.done;
+    document.getElementById('stat-scheduled').textContent = counts.scheduled;
   }
 
   function updateBadges() {
@@ -499,8 +520,8 @@
 
   // ── VIEW SWITCH ──
   const VIEW_TITLES = {
-    all:'全部訂單', reservation:'課程報名', plan:'點數方案',
-    pending:'待確認', checked:'已對帳', imported:'已匯入點數', done:'已完成'
+    all:'全部訂單', reservation:'課程報名', plan:'點數方案', pilates:'皮拉提斯器械床',
+    pending:'待確認', checked:'已對帳', imported:'已匯入點數', done:'已完成', scheduled:'已排課'
   };
 
   function switchView(view) {
@@ -520,10 +541,12 @@
       // view filter
       if (currentView === 'reservation' && o.type !== 'reservation') return false;
       if (currentView === 'plan'        && o.type !== 'plan')        return false;
+      if (currentView === 'pilates'     && o.type !== 'pilates')     return false;
       if (currentView === 'pending'     && o.status !== '待確認')    return false;
       if (currentView === 'checked'     && o.status !== '已對帳')    return false;
       if (currentView === 'imported'    && o.status !== '已匯入點數') return false;
       if (currentView === 'done'        && o.status !== '已完成')    return false;
+      if (currentView === 'scheduled'   && o.status !== '已排課')    return false;
       // course filter
       const oCourse = o.type === 'reservation' ? o.course : '點數方案';
       if (course && oCourse !== course) return false;
@@ -562,9 +585,11 @@
         <tbody>
           ${rows.map(o => `
             <tr>
-              <td>${o.type === 'reservation'
-                ? '<span class="type-badge t-reservation">課程</span>'
-                : '<span class="type-badge t-plan">點數</span>'}</td>
+              <td>${
+                o.type === 'reservation' ? '<span class="type-badge t-reservation">課程</span>' :
+                o.type === 'pilates'     ? '<span class="type-badge" style="background:#e8f5e9;color:#2e7d32">器械</span>' :
+                                           '<span class="type-badge t-plan">點數</span>'
+              }</td>
               <td style="white-space:nowrap;color:var(--text-secondary);font-size:12px">${formatTime(o.timestamp)}</td>
               <td style="font-weight:500;white-space:nowrap">${o.name}</td>
               <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
@@ -586,7 +611,6 @@
 
   function formatTime(ts) {
     if (!ts) return '—';
-    // new Date() 萬用解析，支援 GAS 傳回的所有日期格式
     const d = new Date(ts);
     if (isNaN(d.getTime())) return String(ts).substring(0, 16);
     const yyyy = d.getFullYear();
@@ -600,14 +624,26 @@
   function formatPhone(p) {
     if (!p) return '—';
     let s = String(p).replace(/\D/g, '');
-    // Google Sheets 會把 09 開頭的電話當數字去掉前導 0
     if (s.length === 9) s = '0' + s;
     return s;
   }
 
   function statusDot(status) {
-    const map = { '待確認':'🟠', '已對帳':'🟢', '已匯入點數':'🔵', '已完成':'⚪' };
+    const map = { '待確認':'🟠', '已對帳':'🟢', '已匯入點數':'🔵', '已完成':'⚪', '已排課':'📅', '已取消':'❌' };
     return map[status] || '⚪';
+  }
+
+  // ── COURSE FILTER ──
+  function populateCourseFilter() {
+    const sel = document.getElementById('filter-course');
+    const courses = [...new Set(allOrders.map(o => {
+      if (o.type === 'reservation') return o.course;
+      if (o.type === 'plan') return '點數方案';
+      if (o.type === 'pilates') return '皮拉提斯器械床';
+      return '';
+    }))];
+    sel.innerHTML = '<option value="">所有課程 / 方案</option>' +
+      courses.filter(Boolean).map(c => `<option value="${c}">${c}</option>`).join('');
   }
 
   // ── MODAL ──
@@ -616,41 +652,66 @@
   function openModal(idx) {
     modalOrderIdx = idx;
     const o = allOrders[idx];
-    const title = document.getElementById('modal-title');
-    const body  = document.getElementById('modal-body');
+    const title  = document.getElementById('modal-title');
+    const body   = document.getElementById('modal-body');
     const footer = document.getElementById('modal-footer');
 
-    title.textContent = (o.type === 'reservation' ? '課程報名' : '點數方案') + ' 訂單詳情';
+    const typeLabel = o.type === 'reservation' ? '課程報名' :
+                      o.type === 'pilates'     ? '皮拉提斯器械床' : '點數方案';
+    title.textContent = typeLabel + ' 訂單詳情';
 
-    const fields = [
-      ['狀態', statusDot(o.status) + ' ' + o.status],
-      ['時間', formatTime(o.timestamp)],
-      ['姓名', o.name || '—'],
-      ['課程/方案', o.course || '—'],
-      ['電話', formatPhone(o.phone)],
-      ['Email', o.email || '—'],
-      ['繳費方式', o.pay || '—'],
+    let fields = [
+      ['狀態',   statusDot(o.status) + ' ' + o.status],
+      ['時間',   formatTime(o.timestamp)],
+      ['姓名',   o.name || '—'],
+      ['電話',   formatPhone(o.phone)],
+      ['Email',  o.email || '—'],
+      ['繳費',   o.pay || '—'],
       ['末五碼', o.remit || '—'],
     ];
+
+    if (o.type === 'pilates') {
+      fields.splice(3, 0, ['方案', o.package || '—']);
+      fields.splice(4, 0, ['費用', o.price || '—']);
+      fields.splice(5, 0, ['時段', o.sessions || '—']);
+    } else {
+      fields.splice(3, 0, ['課程', o.course || '—']);
+    }
+
     body.innerHTML = fields.map(([l, v]) =>
       `<div class="order-field"><div class="order-field-label">${l}</div><div class="order-field-value">${v}</div></div>`
     ).join('');
 
-    // 依狀態決定操作按鈕
+    // 依類型與狀態決定按鈕
     let btns = '';
-    if (o.status === '待確認') {
-      btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已對帳')">✅ 已對帳</button>
-              <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消訂單</button>`;
-    } else if (o.status === '已對帳') {
-      btns = `<button class="btn-next btn-import" onclick="doStatusUpdate(${idx},'已匯入點數')">🔵 已匯入點數</button>
-              <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消訂單</button>`;
-    } else if (o.status === '已匯入點數') {
-      btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已完成')" style="background:#8e8e93">⚪ 標記已完成</button>`;
+    if (o.type === 'pilates') {
+      // 皮拉提斯流程：待確認 → 已對帳 → 已排課 → 已完成
+      if (o.status === '待確認') {
+        btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已對帳')">✅ 已對帳</button>
+                <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消</button>`;
+      } else if (o.status === '已對帳') {
+        btns = `<button class="btn-next btn-import" onclick="doStatusUpdate(${idx},'已排課')" style="background:#5a6a7a">📅 已排課</button>
+                <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消</button>`;
+      } else if (o.status === '已排課') {
+        btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已完成')" style="background:#8e8e93">⚪ 標記已完成</button>`;
+      } else {
+        btns = `<span style="font-size:13px;color:var(--text-tertiary)">此訂單已結案</span>`;
+      }
     } else {
-      btns = `<span style="font-size:13px;color:var(--text-tertiary)">此訂單已完成，無需操作</span>`;
+      // 一般課程 / 點數方案流程
+      if (o.status === '待確認') {
+        btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已對帳')">✅ 已對帳</button>
+                <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消訂單</button>`;
+      } else if (o.status === '已對帳') {
+        btns = `<button class="btn-next btn-import" onclick="doStatusUpdate(${idx},'已匯入點數')">🔵 已匯入點數</button>
+                <button class="btn-next btn-cancel"  onclick="doStatusUpdate(${idx},'已取消')">✕ 取消訂單</button>`;
+      } else if (o.status === '已匯入點數') {
+        btns = `<button class="btn-next btn-confirm" onclick="doStatusUpdate(${idx},'已完成')" style="background:#8e8e93">⚪ 標記已完成</button>`;
+      } else {
+        btns = `<span style="font-size:13px;color:var(--text-tertiary)">此訂單已結案</span>`;
+      }
     }
     footer.innerHTML = btns;
-
     document.getElementById('order-modal').classList.add('show');
   }
 
@@ -671,18 +732,29 @@
       updateBadges();
       renderTable();
       toast('✅ 狀態已更新：' + newStatus);
-      // 若已匯入點數 → 自動跳已完成
-      if (newStatus === '已匯入點數') {
-        setTimeout(() => doStatusUpdate(idx, '已完成'), 300);
-        document.getElementById('order-modal').classList.remove('show');
-        return;
-      }
-      // 更新 modal 內容
-      openModal(idx);
+      document.getElementById('order-modal').classList.remove('show');
     } catch(err) {
       toast('❌ 更新失敗，請重試');
       footer.querySelectorAll('button').forEach(b => b.disabled = false);
     }
+  }
+
+  // ── UPDATE STATUS (direct dropdown — kept for compatibility) ──
+  async function updateStatus(sel, sheetName, row) {
+    const newStatus = sel.value;
+    sel.classList.add('saving');
+    try {
+      await gasCall({ action: 'updateStatus', sheetName, row, status: newStatus });
+      const order = allOrders.find(o => o.sheetName === sheetName && o.row === row);
+      if (order) order.status = newStatus;
+      updateStats();
+      updateBadges();
+      toast('✅ 狀態已更新：' + newStatus);
+    } catch(e) {
+      toast('❌ 更新失敗，請重試');
+      sel.value = allOrders.find(o => o.sheetName === sheetName && o.row === row)?.status || '待確認';
+    }
+    sel.classList.remove('saving');
   }
 </script>
 </body>
