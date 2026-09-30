@@ -449,7 +449,7 @@
           email:   row[4] || '',
           pay:     row[8] || '',
           remit:   row[9] || '',
-          status:  row[12] !== undefined ? (row[12] || '待確認') : (row[planHeaders.length - 1] || '待確認'),
+          status:  row[13] !== undefined && row[13] !== '' ? row[13] : (row[12] || '待確認'),
           raw:     row,
         });
       });
