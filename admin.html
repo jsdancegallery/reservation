@@ -433,24 +433,25 @@
         });
       });
 
-      // plan rows
-      // A=時間 B=姓名 C=新舊 D=電話 E=Email F=品項 G=總額 H=總點 I=繳費 J=末五碼 K=同意1 L=同意2 M=狀態
+      // plan rows — 只處理真正的點數方案（排除意外混入的 reservation 資料）
+      // A=時間 B=姓名 C=新舊 D=電話 E=Email F=品項 G=總金額 H=總點數 I=繳費 J=末五碼 K=同意1 L=同意2 (M=空) N=狀態
       const planHeaders = data.plan[0] || [];
       data.plan.slice(1).forEach((row, i) => {
         if (!row[0]) return;
         allOrders.push({
-          type:    'plan',
+          type:      'plan',
           sheetName: 'plan',
-          row:     i + 2,
-          timestamp: row[0] || '',
-          course:  row[5] || '', // items
-          name:    row[1] || '',
-          phone:   row[3] || '',
-          email:   row[4] || '',
-          pay:     row[8] || '',
-          remit:   row[9] || '',
-          status:  row[13] !== undefined && row[13] !== '' ? row[13] : (row[12] || '待確認'),
-          raw:     row,
+          row:       i + 2,
+          timestamp: row[0]  || '',
+          course:    row[5]  || '',
+          name:      row[1]  || '',
+          phone:     row[3]  || '',
+          email:     row[4]  || '',
+          pay:       row[8]  || '',
+          remit:     row[9]  || '',
+          // 狀態在 N 欄(index 13)，若空則讀 M 欄(index 12)
+          status:    (row[13] !== undefined && row[13] !== '') ? row[13] : (row[12] || '待確認'),
+          raw:       row,
         });
       });
 
@@ -550,16 +551,16 @@
     const course = document.getElementById('filter-course').value;
     return allOrders.filter(o => {
       // view filter
-      if (currentView === 'reservation' && o.type !== 'reservation') return false;
-      if (currentView === 'plan'        && o.type !== 'plan')        return false;
-      if (currentView === 'pilates'     && o.type !== 'pilates')     return false;
-      if (currentView === 'pending'     && o.status !== '待確認')    return false;
-      if (currentView === 'checked'     && o.status !== '已對帳')    return false;
+      if (currentView === 'reservation' && o.type === 'plan')      return false;
+      if (currentView === 'plan'        && o.type !== 'plan')       return false;
+      if (currentView === 'pilates'     && o.type !== 'pilates')    return false;
+      if (currentView === 'pending'     && o.status !== '待確認')   return false;
+      if (currentView === 'checked'     && o.status !== '已對帳')   return false;
       if (currentView === 'imported'    && o.status !== '已匯入點數') return false;
-      if (currentView === 'done'        && o.status !== '已完成')    return false;
-      if (currentView === 'scheduled'   && o.status !== '已排課')    return false;
+      if (currentView === 'done'        && o.status !== '已完成')   return false;
+      if (currentView === 'scheduled'   && o.status !== '已排課')   return false;
       // course filter
-      const oCourse = o.type === 'reservation' ? o.course : '點數方案';
+      const oCourse = o.type === 'plan' ? '點數方案' : o.course;
       if (course && oCourse !== course) return false;
       // search
       if (search) {
@@ -591,10 +592,19 @@
             <th>繳費</th>
             <th>末五碼</th>
             <th>狀態</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>
-          ${rows.map(o => `
+          ${rows.map(o => {
+            const idx = allOrders.indexOf(o);
+            const isPilates = o.type === 'pilates';
+            const statusOptions = isPilates
+              ? ['待確認','已對帳','已排課','已完成','已取消']
+              : (o.type === 'plan'
+                  ? ['待確認','已對帳','已匯入點數','已完成','已取消']
+                  : ['待確認','已對帳','已完成','已取消']);
+            return `
             <tr>
               <td>${
                 o.type === 'reservation' ? '<span class="type-badge t-reservation">課程</span>' :
@@ -603,17 +613,20 @@
               }</td>
               <td style="white-space:nowrap;color:var(--text-secondary);font-size:12px">${formatTime(o.timestamp)}</td>
               <td style="font-weight:500;white-space:nowrap">${o.name}</td>
-              <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
+              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
               <td style="white-space:nowrap">${formatPhone(o.phone)}</td>
               <td style="white-space:nowrap;font-size:12px">${o.pay}</td>
               <td style="white-space:nowrap;font-family:monospace">${o.remit || '—'}</td>
               <td>
-                <button class="btn-action" onclick="openModal(${allOrders.indexOf(o)})">
-                  ${statusDot(o.status)} ${o.status}
-                </button>
+                <select class="status-select" onchange="updateStatus(this,'${o.sheetName}',${o.row})">
+                  ${statusOptions.map(s => `<option value="${s}" ${o.status===s?'selected':''}>${statusDot(s)} ${s}</option>`).join('')}
+                </select>
               </td>
-            </tr>
-          `).join('')}
+              <td>
+                <button class="btn-action" onclick="openModal(${idx})">詳情</button>
+              </td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>`;
 
@@ -648,10 +661,8 @@
   function populateCourseFilter() {
     const sel = document.getElementById('filter-course');
     const courses = [...new Set(allOrders.map(o => {
-      if (o.type === 'reservation') return o.course;
       if (o.type === 'plan') return '點數方案';
-      if (o.type === 'pilates') return '皮拉提斯器械床';
-      return '';
+      return o.course; // reservation + pilates 都直接用 course 欄位
     }))];
     sel.innerHTML = '<option value="">所有課程 / 方案</option>' +
       courses.filter(Boolean).map(c => `<option value="${c}">${c}</option>`).join('');
