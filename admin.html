@@ -152,6 +152,42 @@
     border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
   @keyframes spin{to{transform:rotate(360deg)}}
 
+  /* ACTION BUTTON */
+  .btn-action{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+    border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;
+    background:var(--bg);color:var(--text-secondary);border:1.5px solid var(--border);
+    transition:all .15s;white-space:nowrap}
+  .btn-action:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-overlay.show{opacity:1;pointer-events:auto}
+  .modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:520px;
+    box-shadow:var(--shadow-md);transform:translateY(16px);transition:transform .2s;overflow:hidden}
+  .modal-overlay.show .modal{transform:translateY(0)}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;
+    padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+  .modal-title{font-size:16px;font-weight:700}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;
+    color:var(--text-tertiary);line-height:1;padding:4px}
+  .modal-close:hover{color:var(--text-primary)}
+  .modal-body{padding:20px 24px}
+  .order-field{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .order-field:last-child{border-bottom:none}
+  .order-field-label{width:80px;flex-shrink:0;color:var(--text-tertiary);font-weight:500}
+  .order-field-value{color:var(--text-primary);word-break:break-all}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--border);
+    display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+  .btn-next{padding:9px 20px;border-radius:100px;font-family:var(--font);font-size:13px;
+    font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+  .btn-next:hover{opacity:.85}
+  .btn-next:disabled{opacity:.4;pointer-events:none}
+  .btn-confirm{background:#34c759;color:#fff}
+  .btn-import{background:var(--accent);color:#fff}
+  .btn-cancel{background:#ff3b30;color:#fff}
+
   /* TOAST */
   .toast{position:fixed;bottom:24px;right:24px;background:var(--text-primary);
     color:#fff;padding:12px 20px;border-radius:var(--radius-xs);font-size:14px;
