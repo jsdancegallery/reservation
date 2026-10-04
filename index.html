@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JS Dance · 期課報名</title>
+<title>JS Dance · 期課報名 / 點數方案購買</title>
 <meta property="og:title" content="JS Dance · 期課報名 / 點數方案購買">
 <meta property="og:description" content="皮拉提斯一對一、一對多個授課，立即線上報名。">
 <meta property="og:url" content="https://jsdancegallery.github.io/reservation/">
@@ -388,16 +388,16 @@
 <!-- TAB BAR -->
 <div class="tabs-bar">
   <div class="tabs-inner">
-    <button class="tab-btn !hidden" data-tab="tab-mv">兒童MV專攻班</button>
-    <button class="tab-btn !hidden" data-tab="tab-summer">兒童MV夏令營</button>
-    <button class="tab-btn !hidden" data-tab="tab-ballet">成人芭蕾</button>
+    <button class="tab-btn" style="display: none;" data-tab="tab-mv">兒童MV專攻班</button>
+    <button class="tab-btn" style="display: none;" data-tab="tab-summer">兒童MV夏令營</button>
+    <button class="tab-btn" style="display: none;" data-tab="tab-ballet">成人芭蕾</button>
     <button class="tab-btn active" data-tab="tab-pilates">🧘 皮拉提斯器械床</button>
     <button class="tab-btn" data-tab="tab-plan">💎 點數方案</button>
   </div>
 </div>
 
 <!-- ══ PANEL: 兒童MV專攻班 ══ -->
-<div class="panel" id="tab-mv">
+<div class="panel" id="tab-mv" style="display: none;">
   <div class="page-wrap">
     <div class="course-hero mv-hero">
       <div class="hero-glow"></div><div class="hero-dots"></div>
@@ -465,7 +465,7 @@
 </div>
 
 <!-- ══ PANEL: 兒童MV夏令營 ══ -->
-<div class="panel" id="tab-summer">
+<div class="panel" id="tab-summer" style="display: none;">
   <div class="page-wrap">
     <div class="course-hero summer">
       <div class="hero-glow"></div><div class="hero-dots"></div>
@@ -533,7 +533,7 @@
 </div>
 
 <!-- ══ PANEL: 成人芭蕾 ══ -->
-<div class="panel" id="tab-ballet">
+<div class="panel" id="tab-ballet" style="display: none;">
   <div class="page-wrap">
     <div class="course-hero ballet">
       <div class="hero-glow"></div><div class="hero-dots"></div>
