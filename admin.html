@@ -457,6 +457,9 @@
 
       // reservation rows (skip header row 0)
       // A=時間 B=課程 C=家長姓名 D=學員姓名 E=電話 F=Email G=繳費 H=末五碼 I=17fit J=Line K=退費 L=狀態 (M=方案 N=費用 O=時段 for pilates)
+      // A=時間(0) B=課程(1) C=家長(2) D=學員(3) E=電話(4) F=Email(5)
+      // G=繳費(6) H=末五碼(7) I=17fit(8) J=Line(9) K=退費(10) L=狀態(11)
+      // M=金額(12) N=方案(13) O=時段(14)  ← 皮拉提斯額外欄位
       const resHeaders = data.reservation[0] || [];
       data.reservation.slice(1).forEach((row, i) => {
         if (!row[0]) return;
@@ -473,10 +476,9 @@
           pay:       row[6]  || '',
           remit:     row[7]  || '',
           status:    row[11] !== undefined ? (row[11] || '待確認') : (row[resHeaders.length - 1] || '待確認'),
-          // pilates extra
-          package:   row[12] || '',
-          price:     row[13] || '',
-          sessions:  row[14] || '',
+          price:     row[12] || '',   // M 金額（皮拉提斯）
+          package:   row[13] || '',   // N 方案（皮拉提斯）
+          sessions:  row[14] || '',   // O 時段（皮拉提斯）
           raw:       row,
         });
       });
@@ -636,6 +638,7 @@
             <th>時間</th>
             <th>姓名</th>
             <th>課程 / 方案</th>
+            <th>費用</th>
             <th>電話</th>
             <th>繳費</th>
             <th>末五碼</th>
@@ -660,7 +663,12 @@
               }</td>
               <td style="white-space:nowrap;color:var(--text-secondary);font-size:12px">${formatTime(o.timestamp)}</td>
               <td style="font-weight:500;white-space:nowrap">${o.name}</td>
-              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
+              <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
+              <td style="white-space:nowrap;font-size:12px;font-weight:600;color:var(--accent)">${
+                o.type === 'pilates' ? (o.price || '—') :
+                o.type === 'plan'    ? (o.raw[6] ? 'NT$' + Number(o.raw[6]).toLocaleString() : '—') :
+                '—'
+              }</td>
               <td style="white-space:nowrap">${formatPhone(o.phone)}</td>
               <td style="white-space:nowrap;font-size:12px">${o.pay}</td>
               <td style="white-space:nowrap;font-family:monospace">${o.remit || '—'}</td>
@@ -746,11 +754,16 @@
     ];
 
     if (o.type === 'pilates') {
-      fields.splice(3, 0, ['方案', o.package || '—']);
-      fields.splice(4, 0, ['費用', o.price || '—']);
-      fields.splice(5, 0, ['時段', o.sessions || '—']);
+      fields.splice(3, 0, ['課程',   o.course   || '—']);
+      fields.splice(4, 0, ['方案',   o.package  || '—']);
+      fields.splice(5, 0, ['費用',   o.price    || '—']);
+      fields.splice(6, 0, ['預約時段', o.sessions || '—']);
+    } else if (o.type === 'plan') {
+      fields.splice(3, 0, ['品項',   o.course   || '—']);
+      fields.splice(4, 0, ['總金額', o.raw[6] ? 'NT$' + Number(o.raw[6]).toLocaleString() : '—']);
+      fields.splice(5, 0, ['總點數', o.raw[7]   || '—']);
     } else {
-      fields.splice(3, 0, ['課程', o.course || '—']);
+      fields.splice(3, 0, ['課程',   o.course   || '—']);
     }
 
     body.innerHTML = fields.map(([l, v]) =>
