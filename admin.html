@@ -345,6 +345,48 @@
   </div>
 </div>
 
+<!-- SESSION EDITOR MODAL -->
+<div class="modal-overlay" id="session-modal" onclick="closeSessionModal(event)">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title">修改預約時段</div>
+      <button class="modal-close" onclick="closeSessionModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div id="se-current" style="font-size:13px;color:#6e6e73;margin-bottom:16px;padding:10px 14px;background:#f5f5f7;border-radius:8px"></div>
+
+      <!-- Mini calendar -->
+      <div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <button class="cal-arrow" onclick="seChangeMonth(-1)">‹</button>
+          <div style="font-size:14px;font-weight:600" id="se-cal-month"></div>
+          <button class="cal-arrow" onclick="seChangeMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="se-cal-weekdays"></div>
+        <div class="cal-grid" id="se-cal-days" style="margin-top:4px"></div>
+      </div>
+
+      <!-- Time slots -->
+      <div id="se-slots-wrap" style="display:none;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:#6e6e73;margin-bottom:8px" id="se-slots-label"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="se-slot-list"></div>
+      </div>
+
+      <!-- Selected sessions -->
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#6e6e73;margin-bottom:8px">
+          已選新時段 <span id="se-counter" style="font-weight:400"></span>
+        </div>
+        <div id="se-sessions-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-next" style="background:#f5f5f7;color:#1d1d1f" onclick="closeSessionModal()">取消</button>
+      <button class="btn-next btn-confirm" id="se-save-btn" onclick="saveSessionEdit()" disabled>✅ 確認更新時段</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -757,7 +799,12 @@
       fields.splice(3, 0, ['課程',   o.course   || '—']);
       fields.splice(4, 0, ['方案',   o.package  || '—']);
       fields.splice(5, 0, ['費用',   o.price    || '—']);
-      fields.splice(6, 0, ['預約時段', o.sessions || '—']);
+      const sessionsHtml = o.sessions
+        ? o.sessions.split('|').map(s => `<div>${s.trim()}</div>`).join('')
+        : '—';
+      fields.splice(6, 0, ['預約時段', `<div id="modal-sessions-text" style="line-height:1.9">${sessionsHtml}</div>
+        <button class="btn-action" style="margin-top:8px;padding:3px 10px;font-size:11px"
+          onclick="openSessionEditor(${idx})">✏️ 修改時段</button>`]);
     } else if (o.type === 'plan') {
       fields.splice(3, 0, ['品項',   o.course   || '—']);
       fields.splice(4, 0, ['總金額', o.raw[6] ? 'NT$' + Number(o.raw[6]).toLocaleString() : '—']);
@@ -871,6 +918,186 @@
       toast('❌ 更新失敗，請重試');
       footer.querySelectorAll('button').forEach(b => b.disabled = false);
     }
+  }
+
+  // ── SESSION EDITOR ──
+  const SE_DAYS = {
+    3: { label:'週三', slots:['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'] },
+    5: { label:'週五', slots:['13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'] },
+    6: { label:'週六', slots:['10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'] }
+  };
+
+  let seOrderIdx   = null;
+  let seCalYear, seCalMonth;
+  let seSelectedDate = null;
+  let seSessions   = []; // [{date, time, wd}] 新選的時段
+  let seMaxSessions = 1;
+
+  function addMins(timeStr, mins) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const t = h * 60 + m + mins;
+    return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
+  }
+
+  function openSessionEditor(idx) {
+    seOrderIdx = idx;
+    const o = allOrders[idx];
+
+    // 判斷最多幾堂
+    const pkgMap = { '單堂一對一':1,'單堂一對二':1,'五堂一對一':5,'五堂一對二':5 };
+    seMaxSessions = pkgMap[o.package] || 1;
+    seSessions = [];
+    seSelectedDate = null;
+
+    // 顯示目前時段
+    document.getElementById('se-current').textContent = '目前時段：' + (o.sessions || '—');
+    document.getElementById('se-slots-wrap').style.display = 'none';
+    seRenderSessions();
+
+    const today = new Date();
+    seCalYear  = today.getFullYear();
+    seCalMonth = today.getMonth();
+    seRenderCal();
+
+    document.getElementById('session-modal').classList.add('show');
+  }
+
+  function closeSessionModal(e) {
+    if (e && e.target !== document.getElementById('session-modal')) return;
+    document.getElementById('session-modal').classList.remove('show');
+  }
+
+  function seChangeMonth(delta) {
+    seCalMonth += delta;
+    if (seCalMonth < 0)  { seCalMonth = 11; seCalYear--; }
+    if (seCalMonth > 11) { seCalMonth = 0;  seCalYear++; }
+    seSelectedDate = null;
+    document.getElementById('se-slots-wrap').style.display = 'none';
+    seRenderCal();
+  }
+
+  function seRenderCal() {
+    const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    document.getElementById('se-cal-month').textContent = seCalYear + ' 年 ' + months[seCalMonth];
+
+    document.getElementById('se-cal-weekdays').innerHTML =
+      ['日','一','二','三','四','五','六'].map(d => `<div class="cal-weekday">${d}</div>`).join('');
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const first = new Date(seCalYear, seCalMonth, 1);
+    const total = new Date(seCalYear, seCalMonth + 1, 0).getDate();
+    const startWd = first.getDay();
+
+    let html = '';
+    for (let i = 0; i < startWd; i++) html += '<div class="cal-day empty"></div>';
+    for (let d = 1; d <= total; d++) {
+      const date = new Date(seCalYear, seCalMonth, d);
+      const wd   = date.getDay();
+      const isAvail = SE_DAYS[wd] && date >= today;
+      const dateStr = `${seCalYear}-${String(seCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isSel   = dateStr === seSelectedDate;
+      let cls = 'cal-day' + (isAvail ? (isSel ? ' selected-date' : ' available') : ' disabled');
+      const onclick = isAvail ? `onclick="seSelectDate('${dateStr}',${wd})"` : '';
+      html += `<div class="${cls}" ${onclick}>${d}</div>`;
+    }
+    document.getElementById('se-cal-days').innerHTML = html;
+  }
+
+  function seSelectDate(dateStr, wd) {
+    seSelectedDate = dateStr;
+    seRenderCal();
+    const info = SE_DAYS[wd];
+    document.getElementById('se-slots-label').textContent =
+      dateStr.replace(/-/g,'/') + '（' + info.label + '）可選時段';
+
+    const taken = seSessions.filter(s => s.date === dateStr).map(s => s.time);
+    document.getElementById('se-slot-list').innerHTML = info.slots.map(t => {
+      const isSel = taken.includes(t);
+      return `<button type="button" class="slot-btn${isSel?' selected-slot':''}"
+        onclick="seToggleSlot('${dateStr}','${t}',${wd})">${t}</button>`;
+    }).join('');
+    document.getElementById('se-slots-wrap').style.display = 'block';
+  }
+
+  function seToggleSlot(dateStr, time, wd) {
+    const idx = seSessions.findIndex(s => s.date === dateStr && s.time === time);
+    if (idx >= 0) {
+      seSessions.splice(idx, 1);
+    } else {
+      if (seSessions.length >= seMaxSessions) {
+        alert(`此方案最多選 ${seMaxSessions} 個時段，請先移除一個再選`);
+        return;
+      }
+      seSessions.push({ date: dateStr, time, wd });
+    }
+    seSelectDate(dateStr, wd);
+    seRenderSessions();
+  }
+
+  function seRenderSessions() {
+    const el = document.getElementById('se-sessions-list');
+    document.getElementById('se-counter').textContent =
+      `(${seSessions.length} / ${seMaxSessions} 堂)`;
+
+    if (!seSessions.length) {
+      el.innerHTML = `<div style="font-size:13px;color:#aeaeb2;padding:8px 0">尚未選擇新時段</div>`;
+    } else {
+      el.innerHTML = seSessions.map((s, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+          background:#e8f0fe;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:13px;color:#0071e3;font-weight:500">
+          <span>${s.date.replace(/-/g,'/')} ${s.time}（${SE_DAYS[s.wd].label}）</span>
+          <button onclick="seRemove(${i})" style="background:none;border:none;cursor:pointer;color:#0071e3;font-size:15px;opacity:.7">✕</button>
+        </div>`).join('');
+    }
+
+    const done = seSessions.length >= seMaxSessions && seSessions.length > 0;
+    document.getElementById('se-save-btn').disabled = !done;
+  }
+
+  function seRemove(i) {
+    seSessions.splice(i, 1);
+    seRenderSessions();
+    if (seSelectedDate) {
+      const wd = new Date(seSelectedDate + 'T00:00:00').getDay();
+      if (SE_DAYS[wd]) seSelectDate(seSelectedDate, wd);
+    }
+  }
+
+  async function saveSessionEdit() {
+    const o = allOrders[seOrderIdx];
+    const saveBtn = document.getElementById('se-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '更新中…';
+
+    const newSessions = seSessions.map(s => s.date.replace(/-/g,'/') + ' ' + s.time).join(' | ');
+
+    try {
+      await gasCall({
+        action:    'updateSessions',
+        sheetName: o.sheetName,
+        row:       o.row,
+        sessions:  newSessions
+      });
+
+      // 更新本地資料
+      o.sessions = newSessions;
+      if (o.raw) o.raw[14] = newSessions;
+
+      // 更新詳情 modal 顯示
+      const sessText = document.getElementById('modal-sessions-text');
+      if (sessText) {
+        sessText.innerHTML = newSessions.split('|').map(s => `<div>${s.trim()}</div>`).join('');
+      }
+
+      toast('✅ 時段已更新');
+      document.getElementById('session-modal').classList.remove('show');
+      renderTable();
+    } catch(err) {
+      toast('❌ 更新失敗，請重試');
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = '✅ 確認更新時段';
   }
 </script>
 </body>
