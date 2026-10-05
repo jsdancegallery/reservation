@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JS Dance · 期課報名</title>
+<title>JS Dance · 期課報名 / 點數方案購買</title>
 <meta property="og:title" content="JS Dance · 期課報名">
 <meta property="og:description" content="兒童MV專攻班、兒童MV夏令營、成人芭蕾期課班，立即線上報名。">
 <meta property="og:url" content="https://jsdancegallery.github.io/reservation/">
@@ -948,7 +948,7 @@
 </div>
 
 <footer>
-  <p>© 2026 JS Dance · 期課報名 · <a href="https://line.me/ti/p/@jennylin" target="_blank">聯絡我們 @jennylin</a></p>
+  <p>© 2026 JS Dance · 期課報名 · 點數方案購買 · <a href="https://line.me/ti/p/@jennylin" target="_blank">聯絡我們 @jennylin</a></p>
 </footer>
 
 <script>
@@ -1247,16 +1247,22 @@
   }
 
   // 判斷某日期+時段是否被佔用
-  // 每堂課1小時 + 整理半小時 = 共block 3個時段（本身 + 後兩個30分鐘）
-  // 例：預約14:00 → block 14:00、14:30、15:00
+  // 每堂課1小時 + 整理半小時 = 課程佔用1.5小時
+  // 為保護前一堂課的整理時間，往前也要保留1.5小時
+  // 例：預約14:00 → block 13:00、13:30、14:00、14:30、15:00
+  // 下一個可選時段為 15:30
   function isPilBlocked(dateStr, timeStr) {
     const d = dateStr.replace(/-/g, '/');
+    // 把 timeStr 轉成分鐘數，方便比較
+    const toMins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const checkMins = toMins(timeStr);
     return pilBookedSlots.some(b => {
       const [bDate, bTime] = b.split(' ');
       if (bDate !== d) return false;
-      return bTime === timeStr
-        || addMinutes(bTime, 30) === timeStr
-        || addMinutes(bTime, 60) === timeStr;
+      const bookedMins = toMins(bTime);
+      // 被預約時段佔用範圍：前60分鐘 ~ 後60分鐘（課程1小時+整理30分）
+      // checkMins 落在 [bookedMins-60, bookedMins+60] 區間內都 block
+      return checkMins >= bookedMins - 60 && checkMins <= bookedMins + 60;
     });
   }
 
