@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JS Dance · 期課報名 / 點數方案購買</title>
+<title>JS Dance · 期課報名</title>
 <meta property="og:title" content="JS Dance · 期課報名">
 <meta property="og:description" content="兒童MV專攻班、兒童MV夏令營、成人芭蕾期課班，立即線上報名。">
 <meta property="og:url" content="https://jsdancegallery.github.io/reservation/">
@@ -948,7 +948,7 @@
 </div>
 
 <footer>
-  <p>© 2026 JS Dance · 期課報名 · 點數方案購買 ·<a href="https://line.me/ti/p/@jennylin" target="_blank">聯絡我們 @jennylin</a></p>
+  <p>© 2026 JS Dance · 期課報名 · <a href="https://line.me/ti/p/@jennylin" target="_blank">聯絡我們 @jennylin</a></p>
 </footer>
 
 <script>
@@ -1246,15 +1246,17 @@
     return String(Math.floor(total/60)).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
   }
 
-  // 判斷某日期+時段是否被佔用（含被block的後一格）
+  // 判斷某日期+時段是否被佔用
+  // 每堂課1小時 + 整理半小時 = 共block 3個時段（本身 + 後兩個30分鐘）
+  // 例：預約14:00 → block 14:00、14:30、15:00
   function isPilBlocked(dateStr, timeStr) {
-    // dateStr: "2026-10-09", timeStr: "14:00"
-    const d = dateStr.replace(/-/g, '/'); // "2026/10/09"
+    const d = dateStr.replace(/-/g, '/');
     return pilBookedSlots.some(b => {
       const [bDate, bTime] = b.split(' ');
       if (bDate !== d) return false;
-      // block booked time + 30min after
-      return bTime === timeStr || addMinutes(bTime, 30) === timeStr;
+      return bTime === timeStr
+        || addMinutes(bTime, 30) === timeStr
+        || addMinutes(bTime, 60) === timeStr;
     });
   }
 
