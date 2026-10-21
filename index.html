@@ -292,6 +292,63 @@
   footer{text-align:center;padding:28px 24px 48px;font-size:13px;color:var(--text-tertiary);border-top:1px solid var(--border)}
   footer a{color:var(--text-tertiary);text-decoration:none}
   footer a:hover{color:var(--accent)}
+
+  /* PILATES HERO */
+  .course-hero.pilates{background:linear-gradient(160deg,#0f1a14 0%,#1a3020 40%,#2a5a3a 72%,#5a9060 100%)}
+  .course-hero.pilates .hero-glow{background:
+    radial-gradient(ellipse 60% 55% at 68% 38%,rgba(80,200,100,.32) 0%,transparent 65%),
+    radial-gradient(ellipse 45% 45% at 24% 65%,rgba(0,160,80,.22) 0%,transparent 70%)}
+  .pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:28px}
+  .pkg-card{background:var(--surface);border-radius:var(--radius-sm);padding:22px 20px;
+    box-shadow:var(--shadow-sm);border:2px solid var(--border);cursor:pointer;
+    position:relative;transition:border-color .18s,box-shadow .18s,transform .15s;user-select:none}
+  .pkg-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+  .pkg-card.selected{border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,113,227,.12),var(--shadow-md)}
+  .pkg-card-check{position:absolute;top:14px;right:14px;width:22px;height:22px;
+    border-radius:50%;border:2px solid var(--border);background:var(--bg);
+    display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s}
+  .pkg-card.selected .pkg-card-check{background:var(--accent);border-color:var(--accent);color:#fff}
+  .pkg-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;padding:3px 8px;border-radius:100px;margin-bottom:10px}
+  .pkg-name{font-size:15px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+  .pkg-price{font-size:24px;font-weight:700;color:var(--accent);letter-spacing:-.5px}
+  .pkg-price span{font-size:13px;font-weight:400;color:var(--text-secondary)}
+  .pkg-detail{font-size:12px;color:var(--text-secondary);margin-top:5px;line-height:1.5}
+  .pil-step{background:var(--surface);border-radius:var(--radius-sm);padding:24px;
+    box-shadow:var(--shadow-sm);border:1px solid var(--border);margin-bottom:16px}
+  .pil-step-title{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+  .pil-step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+  .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .cal-arrow{background:var(--surface-hover);border:1px solid var(--border);border-radius:8px;
+    width:36px;height:36px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;
+    color:var(--text);transition:background .15s}
+  .cal-arrow:hover{background:var(--border)}
+  .cal-month{font-size:15px;font-weight:700;flex:1;text-align:center}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-weekday{text-align:center;font-size:11px;font-weight:600;color:var(--text-secondary);padding:4px 0}
+  .cal-day{text-align:center;padding:8px 0;border-radius:8px;font-size:14px;cursor:default;
+    min-height:36px;display:flex;align-items:center;justify-content:center}
+  .cal-day.empty{background:transparent}
+  .cal-day.disabled{color:var(--text-tertiary);background:transparent}
+  .cal-day.available{background:rgba(0,113,227,.08);color:var(--accent);cursor:pointer;font-weight:600}
+  .cal-day.available:hover{background:rgba(0,113,227,.18)}
+  .cal-day.selected-date{background:var(--accent);color:#fff;font-weight:700}
+  .cal-day.today{outline:2px solid var(--accent);outline-offset:-2px}
+  .slot-list{display:flex;flex-wrap:wrap;gap:8px}
+  .slot-btn{padding:8px 16px;border-radius:100px;border:2px solid var(--border);
+    background:var(--surface);color:var(--text);font-family:var(--font);font-size:14px;
+    cursor:pointer;transition:all .15s}
+  .slot-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .slot-btn.selected-slot{background:var(--accent);border-color:var(--accent);color:#fff}
+  .sessions-list{display:flex;flex-direction:column;gap:8px}
+  .sessions-empty{font-size:13px;color:var(--text-tertiary);padding:12px 0}
+  .session-item{display:flex;align-items:center;justify-content:space-between;
+    background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.2);
+    border-radius:8px;padding:10px 14px;font-size:14px}
+  .session-remove{background:none;border:none;color:var(--text-tertiary);cursor:pointer;
+    font-size:16px;padding:2px 6px;border-radius:4px;transition:color .15s}
+  .session-remove:hover{color:#d93025}
 </style>
 </head>
 <body>
@@ -322,7 +379,8 @@
   <div class="tabs-inner">
     <button class="tab-btn active" data-tab="tab-mv">兒童MV專攻班</button>
     <button class="tab-btn" data-tab="tab-summer" hidden>兒童MV夏令營</button>
-    <button class="tab-btn" data-tab="tab-ballet">成人芭蕾</button>
+    <button class="tab-btn" data-tab="tab-ballet" hidden>成人芭蕾</button>
+    <button class="tab-btn" data-tab="tab-pilates">🧘 皮拉提斯器械床</button>
     <button class="tab-btn" data-tab="tab-plan">💎 點數方案</button>
   </div>
 </div>
@@ -573,6 +631,145 @@
         </div>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- ══ PANEL: 皮拉提斯器械床 ══ -->
+<div class="panel" id="tab-pilates">
+  <div class="page-wrap">
+    <div class="course-hero pilates">
+      <div class="hero-glow"></div><div class="hero-dots"></div>
+      <div class="hero-content">
+        <div class="hero-badge">🧘 私人教練課</div>
+        <h1 class="hero-title">皮拉提斯<br>器械床</h1>
+        <p class="hero-sub">一對一或一對二的器械床皮拉提斯課程，依個人需求量身訂製，有效改善體態、強化核心、提升身體覺察力。</p>
+      </div>
+    </div>
+
+    <!-- STEP 1: 選擇課程方案 -->
+    <div class="pil-step">
+      <div class="pil-step-title"><div class="pil-step-num">1</div> 選擇課程方案</div>
+      <div class="pkg-grid">
+        <div class="pkg-card" id="pkg-s1" onclick="selectPkg('s1')">
+          <div class="pkg-card-check" id="pkgck-s1">✓</div>
+          <div class="pkg-tag badge-blue">單堂</div>
+          <div class="pkg-name">單堂一對一</div>
+          <div class="pkg-price">NT&#36;1,800 <span>/ 堂</span></div>
+          <div class="pkg-detail">個人專屬器械床課程</div>
+        </div>
+        <div class="pkg-card" id="pkg-s2" onclick="selectPkg('s2')">
+          <div class="pkg-card-check" id="pkgck-s2">✓</div>
+          <div class="pkg-tag badge-gray">單堂</div>
+          <div class="pkg-name">單堂一對二</div>
+          <div class="pkg-price">NT&#36;2,500 <span>/ 堂</span></div>
+          <div class="pkg-detail">雙人共享器械床課程</div>
+        </div>
+        <div class="pkg-card" id="pkg-f1" onclick="selectPkg('f1')">
+          <div class="pkg-card-check" id="pkgck-f1">✓</div>
+          <div class="pkg-tag badge-gold">⭐ 五堂</div>
+          <div class="pkg-name">五堂一對一</div>
+          <div class="pkg-price">NT&#36;7,500 <span>/ 5堂</span></div>
+          <div class="pkg-detail">省 NT&#36;1,500 · 每堂 NT&#36;1,500</div>
+        </div>
+        <div class="pkg-card" id="pkg-f2" onclick="selectPkg('f2')">
+          <div class="pkg-card-check" id="pkgck-f2">✓</div>
+          <div class="pkg-tag badge-green">五堂</div>
+          <div class="pkg-name">五堂一對二</div>
+          <div class="pkg-price">NT&#36;10,375 <span>/ 5堂</span></div>
+          <div class="pkg-detail">省 NT&#36;2,125 · 每堂 NT&#36;2,075</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: 選擇上課時段 -->
+    <div class="pil-step" id="pil-step2" style="display:none">
+      <div class="pil-step-title">
+        <div class="pil-step-num">2</div>
+        選擇上課時段
+        <span id="sessions-counter" style="margin-left:auto;font-size:13px;font-weight:400;color:var(--text-secondary)"></span>
+      </div>
+      <div class="cal-nav">
+        <button class="cal-arrow" onclick="pilChangeMonth(-1)">&#8249;</button>
+        <div class="cal-month" id="pil-cal-month"></div>
+        <button class="cal-arrow" onclick="pilChangeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-grid" id="pil-cal-weekdays"></div>
+      <div class="cal-grid" id="pil-cal-days" style="margin-top:4px"></div>
+      <div id="pil-slots-wrap" style="margin-top:16px;display:none">
+        <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px" id="pil-slots-label"></div>
+        <div class="slot-list" id="pil-slot-list"></div>
+      </div>
+      <div style="margin-top:20px" id="pil-sessions-wrap">
+        <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">已選時段</div>
+        <div id="pil-sessions-list" class="sessions-list">
+          <div class="sessions-empty">尚未選擇任何時段</div>
+        </div>
+      </div>
+      <button id="pil-to-form-btn" onclick="pilGoToForm()"
+        style="display:none;margin-top:20px;width:100%;background:var(--accent);color:#fff;border:none;
+        border-radius:100px;padding:14px;font-family:var(--font);font-size:16px;font-weight:500;cursor:pointer">
+        下一步：填寫報名資料 →
+      </button>
+    </div>
+
+    <!-- STEP 3: 填寫資料 -->
+    <div class="pil-step" id="pil-step3" style="display:none">
+      <div class="pil-step-title"><div class="pil-step-num">3</div> 填寫報名資料</div>
+      <div class="notice-box" style="margin-bottom:20px">
+        <div class="notice-title">💳 繳費資訊</div>
+        <p>匯款請至：<strong>台灣企銀（050）84162122729</strong></p>
+        <div class="account-box"><div class="label">匯款帳號</div><div class="number">台灣企銀（050）84162122729</div></div>
+      </div>
+      <div class="line-box" style="margin-bottom:20px">
+        <div class="line-icon">💬</div>
+        <p>匯款後請加入官方 Line@<br><span class="line-id">@jennylin</span><br>告知小編已匯款，確認後才算完成報名。</p>
+      </div>
+      <div id="feedback-pilates" class="form-feedback"></div>
+      <form id="form-pilates" novalidate>
+        <div class="form-grid">
+          <div class="fg full">
+            <label class="field-label">學員姓名 <span class="req">*</span></label>
+            <p class="field-hint">請輸入真實姓名，以便官方對帳及點名</p>
+            <input type="text" name="student_name" placeholder="王小明" required>
+          </div>
+          <div class="fg">
+            <label class="field-label">聯絡電話 <span class="req">*</span></label>
+            <p class="field-hint">行動電話，課程異動時聯絡用</p>
+            <input type="tel" name="phone" placeholder="0912345678" maxlength="10" required>
+          </div>
+          <div class="fg">
+            <label class="field-label">Email <span class="req">*</span></label>
+            <p class="field-hint">請輸入正確信箱，以便發送上課通知</p>
+            <input type="email" name="email" placeholder="your@email.com" required>
+          </div>
+          <div class="fg full">
+            <label class="field-label">繳費方式 <span class="req">*</span></label>
+            <div class="payment-toggle">
+              <div class="pay-opt"><input type="radio" name="pay_pilates" id="pay_pil_remit" value="匯款" checked onchange="toggleRemit('pilates',this.value)"><label for="pay_pil_remit">🏦 匯款</label></div>
+              <div class="pay-opt"><input type="radio" name="pay_pilates" id="pay_pil_cash" value="現場繳費" onchange="toggleRemit('pilates',this.value)"><label for="pay_pil_cash">💵 現場繳費</label></div>
+            </div>
+          </div>
+          <div class="fg full remit-field" id="remit-pilates">
+            <label class="field-label">匯款末五碼 <span class="req">*</span></label>
+            <p class="field-hint">請輸入匯款末五碼供查帳用</p>
+            <input type="text" name="remit_code" placeholder="例：12345" maxlength="5" required>
+          </div>
+          <div class="fg full">
+            <label class="field-label">注意事項確認 <span class="req">*</span></label>
+            <div class="check-list">
+              <label class="check-item"><input type="checkbox" name="pil_notice1" required value="有17fit帳戶"><span class="check-item-text">我有 17fit 的帳戶，可讓後台匯入本活動方案的點數</span></label>
+              <label class="check-item"><input type="checkbox" name="pil_notice2" required value="知道匯款後告知Line"><span class="check-item-text">我知道匯款後要告知官方 Line 小編（@jennylin）</span></label>
+              <label class="check-item"><input type="checkbox" name="pil_notice3" required value="知道不補課不退費"><span class="check-item-text">我知道若無法來上課，JS 無法補課，亦無法退費</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="submit-area">
+          <p class="submit-note">如有問題請私訊 Line @jennylin</p>
+          <button type="submit" class="btn-submit" id="submit-pilates">確認送出報名 →</button>
+        </div>
+      </form>
+    </div>
+
   </div>
 </div>
 
@@ -1106,6 +1303,267 @@
       feedback.textContent = '❌ 送出失敗，請稍後再試或聯絡 Line。';
     }
     btn.textContent = '確認送出登記 →'; btn.disabled = false;
+  });
+
+  // ── PILATES ──────────────────────────────────────────
+  const PIL_PKGS = {
+    s1: { name:'單堂一對一', price:1800, sessions:1 },
+    s2: { name:'單堂一對二', price:2500, sessions:1 },
+    f1: { name:'五堂一對一', price:7500, sessions:5 },
+    f2: { name:'五堂一對二', price:10375, sessions:5 },
+  };
+  const PIL_DAYS = {
+    3: { label:'週三', slots:['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'] },
+    5: { label:'週五', slots:['13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'] },
+    6: { label:'週六', slots:['10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'] }
+  };
+
+  let pilPkg = null;
+  let pilCalYear, pilCalMonth, pilSelectedDate = null;
+  let pilSessions = [];
+  let pilBookedSlots = [];
+
+  function addMinutes(timeStr, mins) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const total = h * 60 + m + mins;
+    return String(Math.floor(total/60)).padStart(2,'0') + ':' + String(total%60).padStart(2,'0');
+  }
+
+  function isPilBlocked(dateStr, timeStr) {
+    const d = dateStr.replace(/-/g, '/');
+    const toMins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const checkMins = toMins(timeStr);
+    return pilBookedSlots.some(b => {
+      const [bDate, bTime] = b.split(' ');
+      if (bDate !== d) return false;
+      const bookedMins = toMins(bTime);
+      return checkMins >= bookedMins - 60 && checkMins <= bookedMins + 60;
+    });
+  }
+
+  function loadBookedSlots() {
+    return new Promise((resolve) => {
+      const cbName = 'pilcb_' + Date.now();
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        callback: cbName,
+        payload: JSON.stringify({ action: 'getBookedSlots' })
+      });
+      const timer = setTimeout(() => {
+        delete window[cbName];
+        try { document.body.removeChild(script); } catch(e) {}
+        resolve([]);
+      }, 10000);
+      window[cbName] = (data) => {
+        clearTimeout(timer);
+        delete window[cbName];
+        try { document.body.removeChild(script); } catch(e) {}
+        resolve(data.booked || []);
+      };
+      script.onerror = () => { clearTimeout(timer); resolve([]); };
+      script.src = SHEET_URL + '?' + params.toString();
+      document.body.appendChild(script);
+    });
+  }
+
+  async function selectPkg(id) {
+    pilPkg = id;
+    Object.keys(PIL_PKGS).forEach(k => {
+      document.getElementById('pkg-'+k).classList.toggle('selected', k === id);
+      document.getElementById('pkgck-'+k).textContent = '✓';
+    });
+    pilSessions = [];
+    pilSelectedDate = null;
+    document.getElementById('pil-step2').style.display = 'block';
+    document.getElementById('pil-step3').style.display = 'none';
+    document.getElementById('pil-slots-wrap').style.display = 'none';
+    document.getElementById('sessions-counter').textContent = '載入預約資料中…';
+    pilBookedSlots = await loadBookedSlots();
+    const today = new Date();
+    pilCalYear = today.getFullYear();
+    pilCalMonth = today.getMonth();
+    renderPilCal();
+    renderSessions();
+    updateSessionsCounter();
+    document.getElementById('pil-step2').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function pilChangeMonth(delta) {
+    pilCalMonth += delta;
+    if (pilCalMonth < 0) { pilCalMonth = 11; pilCalYear--; }
+    if (pilCalMonth > 11) { pilCalMonth = 0; pilCalYear++; }
+    pilSelectedDate = null;
+    document.getElementById('pil-slots-wrap').style.display = 'none';
+    renderPilCal();
+  }
+
+  function renderPilCal() {
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    document.getElementById('pil-cal-month').textContent = pilCalYear + ' 年 ' + monthNames[pilCalMonth];
+    const wdEl = document.getElementById('pil-cal-weekdays');
+    wdEl.innerHTML = ['日','一','二','三','四','五','六'].map(d =>
+      `<div class="cal-weekday">${d}</div>`).join('');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const first = new Date(pilCalYear, pilCalMonth, 1);
+    const totalDays = new Date(pilCalYear, pilCalMonth + 1, 0).getDate();
+    const startWd = first.getDay();
+    let html = '';
+    for (let i = 0; i < startWd; i++) html += '<div class="cal-day empty"></div>';
+    for (let d = 1; d <= totalDays; d++) {
+      const date = new Date(pilCalYear, pilCalMonth, d);
+      const wd = date.getDay();
+      const isAvail = PIL_DAYS[wd] && date >= today;
+      const isToday = date.getTime() === today.getTime();
+      const dateStr = `${pilCalYear}-${String(pilCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isSel = dateStr === pilSelectedDate;
+      let cls = 'cal-day';
+      if (!isAvail) cls += ' disabled';
+      else if (isSel) cls += ' selected-date';
+      else cls += ' available';
+      if (isToday) cls += ' today';
+      const onclick = isAvail ? `onclick="pilSelectDate('${dateStr}',${wd})"` : '';
+      html += `<div class="${cls}" ${onclick}>${d}</div>`;
+    }
+    document.getElementById('pil-cal-days').innerHTML = html;
+  }
+
+  function pilSelectDate(dateStr, wd) {
+    pilSelectedDate = dateStr;
+    renderPilCal();
+    const info = PIL_DAYS[wd];
+    const label = dateStr.replace(/-/g,'/') + '（' + info.label + '）可選時段';
+    document.getElementById('pil-slots-label').textContent = label;
+    const taken = pilSessions.map(s => s.date === dateStr ? s.time : null).filter(Boolean);
+    document.getElementById('pil-slot-list').innerHTML = info.slots.map(t => {
+      const isSel    = taken.includes(t);
+      const isBooked = isPilBlocked(dateStr, t);
+      if (isBooked) {
+        return `<button type="button" class="slot-btn" disabled
+          style="opacity:.35;cursor:not-allowed;text-decoration:line-through"
+          title="此時段已被預約">${t}</button>`;
+      }
+      return `<button type="button" class="slot-btn${isSel?' selected-slot':''}"
+        onclick="pilToggleSlot('${dateStr}','${t}',${wd})">${t}</button>`;
+    }).join('');
+    document.getElementById('pil-slots-wrap').style.display = 'block';
+  }
+
+  function pilToggleSlot(dateStr, time, wd) {
+    const maxSess = PIL_PKGS[pilPkg].sessions;
+    const idx = pilSessions.findIndex(s => s.date === dateStr && s.time === time);
+    if (idx >= 0) {
+      pilSessions.splice(idx, 1);
+    } else {
+      if (pilSessions.length >= maxSess) {
+        alert(`此方案最多選 ${maxSess} 個時段，請先移除一個再選`);
+        return;
+      }
+      pilSessions.push({ date: dateStr, time, wd });
+    }
+    pilSelectDate(dateStr, wd);
+    renderSessions();
+    updateSessionsCounter();
+  }
+
+  function renderSessions() {
+    const el = document.getElementById('pil-sessions-list');
+    if (!pilSessions.length) {
+      el.innerHTML = '<div class="sessions-empty">尚未選擇任何時段</div>';
+    } else {
+      el.innerHTML = pilSessions.map((s, i) =>
+        `<div class="session-item">
+          <span>${s.date.replace(/-/g,'/')} ${s.time}（${PIL_DAYS[s.wd].label}）</span>
+          <button class="session-remove" onclick="pilRemoveSession(${i})">✕</button>
+        </div>`
+      ).join('');
+    }
+    const maxSess = PIL_PKGS[pilPkg] ? PIL_PKGS[pilPkg].sessions : 1;
+    const done = pilSessions.length >= maxSess;
+    const btn = document.getElementById('pil-to-form-btn');
+    btn.style.display = done ? 'block' : 'none';
+  }
+
+  function pilRemoveSession(i) {
+    pilSessions.splice(i, 1);
+    renderSessions();
+    updateSessionsCounter();
+    if (pilSelectedDate) {
+      const wd = new Date(pilSelectedDate).getDay();
+      if (PIL_DAYS[wd]) pilSelectDate(pilSelectedDate, wd);
+    }
+  }
+
+  function updateSessionsCounter() {
+    if (!pilPkg) return;
+    const max = PIL_PKGS[pilPkg].sessions;
+    document.getElementById('sessions-counter').textContent = `已選 ${pilSessions.length} / ${max} 堂`;
+  }
+
+  function pilGoToForm() {
+    document.getElementById('pil-step3').style.display = 'block';
+    document.getElementById('pil-step3').scrollIntoView({ behavior:'smooth', block:'start' });
+    const field = document.getElementById('remit-pilates');
+    if (field) { field.classList.remove('hidden'); field.querySelector('input').setAttribute('required',''); }
+  }
+
+  document.getElementById('form-pilates').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const feedback = document.getElementById('feedback-pilates');
+    const btn = document.getElementById('submit-pilates');
+    if (!pilPkg || !pilSessions.length) {
+      feedback.className = 'form-feedback show error';
+      feedback.textContent = '⚠️ 請先選擇課程方案與上課時段。';
+      feedback.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    let valid = true;
+    form.querySelectorAll('[required]').forEach(el => {
+      if (el.type === 'checkbox' && !el.checked) valid = false;
+      else if (el.type !== 'checkbox' && !el.value.trim()) valid = false;
+    });
+    if (!valid) {
+      feedback.className = 'form-feedback show error';
+      feedback.textContent = '⚠️ 請填寫所有必填欄位並勾選注意事項。';
+      feedback.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    btn.textContent = '送出中…'; btn.disabled = true;
+    const pkg = PIL_PKGS[pilPkg];
+    const sessionsStr = pilSessions.map(s => s.date.replace(/-/g,'/') + ' ' + s.time).join(' | ');
+    const payMethod = form.querySelector('input[name="pay_pilates"]:checked')?.value || '匯款';
+    const payload = {
+      timestamp:    new Date().toLocaleString('zh-TW', { timeZone:'Asia/Taipei' }),
+      course:       '皮拉提斯器械床',
+      student_name: form.student_name.value.trim(),
+      phone:        form.phone.value.trim(),
+      email:        form.email.value.trim(),
+      package:      pkg.name,
+      price:        'NT$' + pkg.price.toLocaleString(),
+      sessions:     sessionsStr,
+      pay_method:   payMethod,
+      remit_code:   form.remit_code?.value.trim() || '',
+      notice1: form.pil_notice1.checked ? '✓' : '',
+      notice2: form.pil_notice2.checked ? '✓' : '',
+      notice3: form.pil_notice3.checked ? '✓' : '',
+    };
+    try {
+      await fetch(SHEET_URL, { method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      form.reset(); pilPkg = null; pilSessions = [];
+      Object.keys(PIL_PKGS).forEach(k => document.getElementById('pkg-'+k).classList.remove('selected'));
+      document.getElementById('pil-step2').style.display = 'none';
+      document.getElementById('pil-step3').style.display = 'none';
+      const msg = payMethod === '現場繳費'
+        ? '皮拉提斯器械床報名成功！請於現場繳費。如有問題請私訊 Line @jennylin。'
+        : '皮拉提斯器械床報名成功！請完成匯款並告知 Line @jennylin，確認後即完成報名。';
+      document.getElementById('thank-msg').textContent = msg;
+      document.getElementById('thank-page').classList.add('show');
+    } catch(err) {
+      feedback.className = 'form-feedback show error';
+      feedback.textContent = '❌ 送出失敗，請稍後再試或直接聯絡 Line @jennylin。';
+    }
+    btn.textContent = '確認送出報名 →'; btn.disabled = false;
   });
 </script>
 </body>
