@@ -587,13 +587,20 @@
         });
       }
 
-      // sort newest first — 用 row index 當 fallback，確保順序穩定
+      // sort newest first
+      function parseTs(ts) {
+        if (!ts) return 0;
+        const s = String(ts).trim();
+        // ISO 格式：2026-10-25T20:30:00.000Z
+        // 斜線格式：2026/10/25 20:30:00 或 2026/10/25 20:30
+        const normalized = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1-$2-$3');
+        const t = new Date(normalized).getTime();
+        return isNaN(t) ? 0 : t;
+      }
       allOrders.sort((a, b) => {
-        const ta = new Date(a.timestamp).getTime();
-        const tb = new Date(b.timestamp).getTime();
-        const va = isNaN(ta) ? 0 : ta;
-        const vb = isNaN(tb) ? 0 : tb;
-        if (vb !== va) return vb - va;
+        const ta = parseTs(a.timestamp);
+        const tb = parseTs(b.timestamp);
+        if (tb !== ta) return tb - ta;
         // 時間相同或無法解析時，用 sheet row 倒序（row 越大越新）
         return b.row - a.row;
       });
@@ -603,24 +610,6 @@
       populateCourseFilter();
       renderTable();
 
-      // ── 顯示 debug 面板（確認正常後可移除）──
-      const dbg = window._debugPlan || {};
-      const planSample = dbg.sample ? dbg.sample.slice(0,6).join(' | ') : '—';
-      const debugHtml = `
-        <div id="debug-panel" style="margin-top:16px;padding:14px 18px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:12px;font-family:monospace">
-          <div style="font-weight:700;margin-bottom:8px;font-family:sans-serif">🔍 Debug Panel（確認後可重新整理移除）</div>
-          <div>reservation 筆數：${data.reservation ? data.reservation.length - 1 : 0}</div>
-          <div>plan 總行數：${data.plan ? data.plan.length : 0}｜跳過：${dbg.skipped||0}｜加入：${dbg.added||0}</div>
-          <div>pilates 筆數：${data.pilates ? data.pilates.length - 1 : 0}</div>
-          <div style="margin-top:6px">plan row[1] 前6欄：${planSample}</div>
-          <div>plan row[1][0] 型別：${dbg.sample ? typeof data.plan[1][0] : '—'}</div>
-          <div style="margin-top:6px">allOrders 總計：${allOrders.length}（plan：${allOrders.filter(o=>o.type==='plan').length}）</div>
-          <button onclick="document.getElementById('debug-panel').remove()"
-            style="margin-top:10px;padding:4px 12px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff">
-            關閉
-          </button>
-        </div>`;
-      document.querySelector('.content').insertAdjacentHTML('beforeend', debugHtml);
 
     } catch(e) {
       document.getElementById('table-container').innerHTML =
@@ -772,8 +761,10 @@
 
   function formatTime(ts) {
     if (!ts) return '—';
-    const d = new Date(ts);
-    if (isNaN(d.getTime())) return String(ts).substring(0, 16);
+    const s = String(ts).trim();
+    const normalized = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1-$2-$3');
+    const d = new Date(normalized);
+    if (isNaN(d.getTime())) return s.substring(0, 16);
     const yyyy = d.getFullYear();
     const mm   = String(d.getMonth() + 1).padStart(2, '0');
     const dd   = String(d.getDate()).padStart(2, '0');
