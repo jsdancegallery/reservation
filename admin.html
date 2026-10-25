@@ -549,28 +549,27 @@
       });
 
       // pilates rows
-      // GAS columns: timestamp(0) course(1) student_name(2) phone(3) email(4)
-      //              package(5) price(6) sessions(7) pay_method(8) remit_code(9)
-      //              notice1(10) notice2(11) notice3(12) status(last)
+      // Sheet 欄位：A時間(0) B課程(1) C學生(2) D電話(3) E Email(4)
+      //            F繳費(5) G末五碼(6) H17fit(7) ILine(8) J退費(9)
+      //            K狀態(10) L金額(11) M方案(12) N時段(13) O狀態主(14)
       if (data.pilates) {
-        const pilHeaders = data.pilates[0] || [];
         data.pilates.slice(1).forEach((row, i) => {
           if (!row[0]) return;
           allOrders.push({
             type:      'pilates',
             sheetName: 'pilates',
             row:       i + 2,
-            timestamp: row[0] || '',
-            course:    row[1] || '',
-            name:      row[2] || '',
-            phone:     row[3] || '',
-            email:     row[4] || '',
-            package:   row[5] || '',
-            price:     row[6] || '',
-            sessions:  row[7] || '',
-            pay:       row[8] || '',
-            remit:     row[9] || '',
-            status:    row[pilHeaders.length - 1] || '待確認',
+            timestamp: row[0]  || '',
+            course:    row[1]  || '',
+            name:      row[2]  || '',
+            phone:     row[3]  || '',
+            email:     row[4]  || '',
+            pay:       row[5]  || '',
+            remit:     row[6]  || '',
+            package:   row[12] || '',
+            price:     row[11] || '',
+            sessions:  row[13] || '',
+            status:    row[10] || '待確認',  // K欄（index 10）= 主狀態
             raw:       row,
           });
         });
