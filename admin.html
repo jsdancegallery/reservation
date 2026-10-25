@@ -587,8 +587,16 @@
         });
       }
 
-      // sort newest first
-      allOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      // sort newest first — 用 row index 當 fallback，確保順序穩定
+      allOrders.sort((a, b) => {
+        const ta = new Date(a.timestamp).getTime();
+        const tb = new Date(b.timestamp).getTime();
+        const va = isNaN(ta) ? 0 : ta;
+        const vb = isNaN(tb) ? 0 : tb;
+        if (vb !== va) return vb - va;
+        // 時間相同或無法解析時，用 sheet row 倒序（row 越大越新）
+        return b.row - a.row;
+      });
 
       updateStats();
       updateBadges();
@@ -775,8 +783,10 @@
   }
 
   function formatPhone(p) {
-    if (!p) return '—';
-    let s = String(p).replace(/\D/g, '');
+    if (!p && p !== 0) return '—';
+    let s = String(p).trim().replace(/\D/g, '');
+    if (!s) return '—';
+    // 9位數 → 補0（台灣手機09開頭共10碼）
     if (s.length === 9) s = '0' + s;
     return s;
   }
