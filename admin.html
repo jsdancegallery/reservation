@@ -527,8 +527,9 @@
 
       // plan rows — 只處理真正的點數方案（排除意外混入的 reservation 資料）
       // A=時間 B=姓名 C=新舊 D=電話 E=Email F=品項 G=總金額 H=總點數 I=繳費 J=末五碼 K=同意1 L=同意2 (M=空) N=狀態
-      const planHeaders = data.plan[0] || [];
-      data.plan.slice(1).forEach((row, i) => {
+      const planRows = data.plan || [];
+      const planHeaders = planRows[0] || [];
+      planRows.slice(1).forEach((row, i) => {
         if (!row[0]) return;
         allOrders.push({
           type:      'plan',
