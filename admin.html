@@ -525,28 +525,40 @@
         });
       });
 
-      // plan rows — 只處理真正的點數方案（排除意外混入的 reservation 資料）
-      // A=時間 B=姓名 C=新舊 D=電話 E=Email F=品項 G=總金額 H=總點數 I=繳費 J=末五碼 K=同意1 L=同意2 (M=空) N=狀態
+      // plan rows
+      // A=時間(0) B=姓名(1) C=新舊(2) D=電話(3) E=Email(4) F=品項(5)
+      // G=總金額(6) H=總點數(7) I=繳費(8) J=末五碼(9) K=同意1(10) L=同意2(11) M=狀態(12)
       const planRows = data.plan || [];
-      const planHeaders = planRows[0] || [];
+      let planSkipped = 0, planAdded = 0;
       planRows.slice(1).forEach((row, i) => {
-        if (!row[0]) return;
+        // row[0] 可能是 Date 物件或字串，用 String() 轉換再判空
+        const ts = row[0] !== undefined && row[0] !== null && row[0] !== '' ? String(row[0]) : '';
+        if (!ts) { planSkipped++; return; }
+        planAdded++;
         allOrders.push({
           type:      'plan',
           sheetName: 'plan',
           row:       i + 2,
-          timestamp: row[0]  || '',
+          timestamp: ts,
           course:    row[5]  || '',
           name:      row[1]  || '',
           phone:     row[3]  || '',
           email:     row[4]  || '',
           pay:       row[8]  || '',
           remit:     row[9]  || '',
-          // 狀態在 N 欄(index 13)，若空則讀 M 欄(index 12)
-          status:    (row[13] !== undefined && row[13] !== '') ? row[13] : (row[12] || '待確認'),
+          status:    row[12] !== undefined && row[12] !== '' ? String(row[12]) : '待確認',
           raw:       row,
         });
       });
+      // Debug info (可在確認正常後移除)
+      console.log('[plan] 總行數:', planRows.length, '跳過:', planSkipped, '加入:', planAdded);
+      if (planRows.length > 1) {
+        console.log('[plan] row[1][0] 原始值:', planRows[1][0], '型別:', typeof planRows[1][0]);
+        console.log('[plan] row[1] 完整:', JSON.stringify(planRows[1]));
+      }
+      // 在頁面顯示 debug 訊息（確認後可移除）
+      window._debugPlan = { total: planRows.length, skipped: planSkipped, added: planAdded,
+        sample: planRows[1] ? planRows[1].map(String) : [] };
 
       // pilates rows
       // Sheet 欄位：A時間(0) B課程(1) C學生(2) D電話(3) E Email(4)
@@ -582,9 +594,29 @@
       updateBadges();
       populateCourseFilter();
       renderTable();
+
+      // ── 顯示 debug 面板（確認正常後可移除）──
+      const dbg = window._debugPlan || {};
+      const planSample = dbg.sample ? dbg.sample.slice(0,6).join(' | ') : '—';
+      const debugHtml = `
+        <div id="debug-panel" style="margin-top:16px;padding:14px 18px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:12px;font-family:monospace">
+          <div style="font-weight:700;margin-bottom:8px;font-family:sans-serif">🔍 Debug Panel（確認後可重新整理移除）</div>
+          <div>reservation 筆數：${data.reservation ? data.reservation.length - 1 : 0}</div>
+          <div>plan 總行數：${data.plan ? data.plan.length : 0}｜跳過：${dbg.skipped||0}｜加入：${dbg.added||0}</div>
+          <div>pilates 筆數：${data.pilates ? data.pilates.length - 1 : 0}</div>
+          <div style="margin-top:6px">plan row[1] 前6欄：${planSample}</div>
+          <div>plan row[1][0] 型別：${dbg.sample ? typeof data.plan[1][0] : '—'}</div>
+          <div style="margin-top:6px">allOrders 總計：${allOrders.length}（plan：${allOrders.filter(o=>o.type==='plan').length}）</div>
+          <button onclick="document.getElementById('debug-panel').remove()"
+            style="margin-top:10px;padding:4px 12px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff">
+            關閉
+          </button>
+        </div>`;
+      document.querySelector('.content').insertAdjacentHTML('beforeend', debugHtml);
+
     } catch(e) {
       document.getElementById('table-container').innerHTML =
-        '<div class="empty-state"><div class="icon">⚠️</div><p>載入失敗，請重新整理。</p></div>';
+        `<div class="empty-state"><div class="icon">⚠️</div><p>載入失敗：${e.message || e}</p></div>`;
     }
   }
 
