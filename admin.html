@@ -498,29 +498,24 @@
       allOrders = [];
 
       // reservation rows (skip header row 0)
-      // A=時間 B=課程 C=家長姓名 D=學員姓名 E=電話 F=Email G=繳費 H=末五碼 I=17fit J=Line K=退費 L=狀態 (M=方案 N=費用 O=時段 for pilates)
       // A=時間(0) B=課程(1) C=家長(2) D=學員(3) E=電話(4) F=Email(5)
-      // G=繳費(6) H=末五碼(7) I=17fit(8) J=Line(9) K=退費(10) L=狀態(11)
-      // M=金額(12) N=方案(13) O=時段(14)  ← 皮拉提斯額外欄位
+      // G=繳費(6) H=末五碼(7) I=同意1(8) J=同意2(9) K=同意3(10) L=狀態(11) M=金額(12)
       const resHeaders = data.reservation[0] || [];
       data.reservation.slice(1).forEach((row, i) => {
         if (!row[0]) return;
-        const isPilates = (row[1] || '') === '皮拉提斯器械床';
         allOrders.push({
-          type:      isPilates ? 'pilates' : 'reservation',
+          type:      'reservation',
           sheetName: 'reservation',
           row:       i + 2,
           timestamp: row[0]  || '',
           course:    row[1]  || '',
-          name:      isPilates ? (row[3] || '') : ((row[2] || '') + (row[3] ? ' / ' + row[3] : '')),
+          name:      (row[2] || '') + (row[3] ? ' / ' + row[3] : ''),
           phone:     row[4]  || '',
           email:     row[5]  || '',
           pay:       row[6]  || '',
           remit:     row[7]  || '',
-          status:    row[11] !== undefined ? (row[11] || '待確認') : (row[resHeaders.length - 1] || '待確認'),
-          price:     row[12] || '',   // M 金額（皮拉提斯）
-          package:   row[13] || '',   // N 方案（皮拉提斯）
-          sessions:  row[14] || '',   // O 時段（皮拉提斯）
+          status:    row[11] !== undefined ? (row[11] || '待確認') : '待確認',
+          price:     row[12] || '',   // M 金額
           raw:       row,
         });
       });
@@ -529,12 +524,9 @@
       // A=時間(0) B=姓名(1) C=新舊(2) D=電話(3) E=Email(4) F=品項(5)
       // G=總金額(6) H=總點數(7) I=繳費(8) J=末五碼(9) K=同意1(10) L=同意2(11) M=狀態(12)
       const planRows = data.plan || [];
-      let planSkipped = 0, planAdded = 0;
       planRows.slice(1).forEach((row, i) => {
-        // row[0] 可能是 Date 物件或字串，用 String() 轉換再判空
         const ts = row[0] !== undefined && row[0] !== null && row[0] !== '' ? String(row[0]) : '';
-        if (!ts) { planSkipped++; return; }
-        planAdded++;
+        if (!ts) return;
         allOrders.push({
           type:      'plan',
           sheetName: 'plan',
@@ -550,15 +542,6 @@
           raw:       row,
         });
       });
-      // Debug info (可在確認正常後移除)
-      console.log('[plan] 總行數:', planRows.length, '跳過:', planSkipped, '加入:', planAdded);
-      if (planRows.length > 1) {
-        console.log('[plan] row[1][0] 原始值:', planRows[1][0], '型別:', typeof planRows[1][0]);
-        console.log('[plan] row[1] 完整:', JSON.stringify(planRows[1]));
-      }
-      // 在頁面顯示 debug 訊息（確認後可移除）
-      window._debugPlan = { total: planRows.length, skipped: planSkipped, added: planAdded,
-        sample: planRows[1] ? planRows[1].map(String) : [] };
 
       // pilates rows
       // Sheet 欄位：A時間(0) B課程(1) C學生(2) D電話(3) E Email(4)
@@ -736,8 +719,8 @@
               <td style="font-weight:500;white-space:nowrap">${o.name}</td>
               <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-secondary)" title="${o.course}">${o.course}</td>
               <td style="white-space:nowrap;font-size:12px;font-weight:600;color:var(--accent)">${
-                o.type === 'pilates' ? (o.price || '—') :
                 o.type === 'plan'    ? (o.raw[6] ? 'NT$' + Number(o.raw[6]).toLocaleString() : '—') :
+                o.price              ? 'NT$' + Number(o.price).toLocaleString() :
                 '—'
               }</td>
               <td style="white-space:nowrap">${formatPhone(o.phone)}</td>
@@ -843,7 +826,8 @@
       fields.splice(4, 0, ['總金額', o.raw[6] ? 'NT$' + Number(o.raw[6]).toLocaleString() : '—']);
       fields.splice(5, 0, ['總點數', o.raw[7]   || '—']);
     } else {
-      fields.splice(3, 0, ['課程',   o.course   || '—']);
+      fields.splice(3, 0, ['課程', o.course || '—']);
+      if (o.price) fields.splice(4, 0, ['費用', 'NT$' + Number(o.price).toLocaleString()]);
     }
 
     body.innerHTML = fields.map(([l, v]) =>
