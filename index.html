@@ -1036,7 +1036,7 @@
       btn.textContent = '送出中…'; btn.disabled = true;
       const payMethod = form.querySelector('input[name^="pay_"]:checked')?.value || '匯款';
       const payload = {
-        timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+        timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' }).replace('T', ' '),
         course: courseLabel,
         price: coursePrice || '',
         parent_name:  form.parent_name?.value.trim() || '',
@@ -1099,7 +1099,7 @@
     const payMethod = form.querySelector('input[name="pay_mv"]:checked')?.value || '匯款';
     const courseLabel = '兒童MV專攻班（' + mvClass.value + '）';
     const payload = {
-      timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+      timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' }).replace('T', ' '),
       course: courseLabel,
       price: '2700',
       parent_name:  form.parent_name?.value.trim() || '',
@@ -1262,7 +1262,7 @@
 
     const payMethod = form.querySelector('input[name="pay_plan"]:checked')?.value || '';
     const payload = {
-      timestamp:   new Date().toLocaleString('zh-TW', { timeZone:'Asia/Taipei' }),
+      timestamp:   new Date().toLocaleString('sv-SE', { timeZone:'Asia/Taipei' }).replace('T', ' '),
       name:        form.name.value.trim(),
       is_new:      form.querySelector('input[name="is_new"]:checked')?.value || '',
       phone:       form.phone.value.trim(),
@@ -1535,7 +1535,7 @@
     const sessionsStr = pilSessions.map(s => s.date.replace(/-/g,'/') + ' ' + s.time).join(' | ');
     const payMethod = form.querySelector('input[name="pay_pilates"]:checked')?.value || '匯款';
     const payload = {
-      timestamp:    new Date().toLocaleString('zh-TW', { timeZone:'Asia/Taipei' }),
+      timestamp:    new Date().toLocaleString('sv-SE', { timeZone:'Asia/Taipei' }).replace('T', ' '),
       course:       '皮拉提斯器械床',
       student_name: form.student_name.value.trim(),
       phone:        form.phone.value.trim(),
