@@ -573,11 +573,18 @@
       // sort newest first
       function parseTs(ts) {
         if (!ts) return 0;
-        const s = String(ts).trim();
-        // ISO 格式：2026-10-25T20:30:00.000Z
-        // 斜線格式：2026/10/25 20:30:00 或 2026/10/25 20:30
-        const normalized = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1-$2-$3');
-        const t = new Date(normalized).getTime();
+        let s = String(ts).trim();
+        // zh-TW toLocaleString 會產生「上午/下午/晚上」，轉成 24 小時
+        // 格式：2026/11/2 晚上9:30:00 或 下午3:05:00 或 上午10:00:00
+        s = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(上午|下午|晚上)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/, (_, y, mo, d, period, h, mi, sec) => {
+          let hour = parseInt(h, 10);
+          if (period === '下午' || period === '晚上') { if (hour < 12) hour += 12; }
+          else if (period === '上午') { if (hour === 12) hour = 0; }
+          return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(hour).padStart(2,'0')}:${mi}:${sec || '00'}`;
+        });
+        // 斜線格式：2026/10/25 20:30
+        s = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1-$2-$3');
+        const t = new Date(s).getTime();
         return isNaN(t) ? 0 : t;
       }
       allOrders.sort((a, b) => {
@@ -744,7 +751,13 @@
 
   function formatTime(ts) {
     if (!ts) return '—';
-    const s = String(ts).trim();
+    let s = String(ts).trim();
+    s = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(上午|下午|晚上)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/, (_, y, mo, day, period, h, mi, sec) => {
+      let hour = parseInt(h, 10);
+      if (period === '下午' || period === '晚上') { if (hour < 12) hour += 12; }
+      else if (period === '上午') { if (hour === 12) hour = 0; }
+      return `${y}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}T${String(hour).padStart(2,'0')}:${mi}:${sec || '00'}`;
+    });
     const normalized = s.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1-$2-$3');
     const d = new Date(normalized);
     if (isNaN(d.getTime())) return s.substring(0, 16);
