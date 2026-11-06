@@ -1144,9 +1144,9 @@
         email:        form.email.value.trim(),
         pay_method:   payMethod,
         remit_code:   form.remit_code?.value.trim() || '',
-        notice1: form.notice1.checked ? '✓' : '',
-        notice2: form.notice2.checked ? '✓' : '',
-        notice3: form.notice3.checked ? '✓' : '',
+        notice1: form.notice1?.checked ? '✓' : '',
+        notice2: form.notice2?.checked ? '✓' : '',
+        notice3: form.notice3?.checked ? '✓' : '',
       };
       try {
         await fetch(SHEET_URL, { method:'POST', mode:'no-cors',
